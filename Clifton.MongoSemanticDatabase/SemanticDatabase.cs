@@ -79,7 +79,17 @@ namespace Clifton.MongoSemanticDatabase
 
 			if (schema.IsConcreteType)
 			{
-				id = Insert(schema.Name, jobj);
+				int refCount;
+
+				if (IsDuplicate(schema.Name, jobj, out id, out refCount))
+				{
+					IncrementRefCount(schema.Name, id, refCount);
+				}
+				else
+				{
+					JObject withRef = AddRef1(jobj);
+					id = Insert(schema.Name, withRef);
+				}
 			}
 			else
 			{
@@ -90,6 +100,41 @@ namespace Clifton.MongoSemanticDatabase
 			}
 
 			return id;
+		}
+
+		protected void IncrementRefCount(string collectionName, string id, int refCount)
+		{
+			++refCount;
+			var collection = db.GetCollection<BsonDocument>(collectionName);
+			var filter = new BsonDocument("_id", new ObjectId(id));
+			var update = Builders<BsonDocument>.Update.Set("_ref", refCount);
+			collection.UpdateOne(filter, update);
+		}
+
+		protected JObject AddRef1(JObject jobj)
+		{
+			JObject withRef = new JObject(jobj);
+			withRef.Add("_ref", 1);
+
+			return withRef;
+		}
+
+		protected bool IsDuplicate(string collectionName, JObject jobj, out string id, out int refCount)
+		{
+			bool exists = false;
+			id = null;
+			refCount = 0;
+			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(BsonDocument.Parse(jobj.ToString())).ToList();
+			exists = docs.Count == 1;
+			// TODO: Assert that docs.Count is never > 1
+
+			if (exists)
+			{
+				id = docs[0].Elements.Single(el => el.Name == "_id").Value.ToString();
+				refCount = docs[0].Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+			}
+
+			return exists;
 		}
 
 		protected string Insert(string collectionName, JObject jobj)
