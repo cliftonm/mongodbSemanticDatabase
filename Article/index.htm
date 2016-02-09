@@ -1,0 +1,598 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Using MongoDB as a Semantic Data</title>
+</head>
+
+<body>
+
+<h2>Using MongoDB as a Semantic Database</h2>
+<p>As I've written previously:</p>
+<p>
+<a href="http://www.codeproject.com/Articles/832959/Semantic-Database-Concept-Architecture-and-Impleme">
+Semantic Database: Concept, Architecture and Implementation</a><br>
+<a href="http://www.codeproject.com/Articles/837878/The-Semantic-Database-In-Action">
+The Semantic Database In Action</a></p>
+<p>semantic databases are a new kind of database store.&nbsp; Because such a 
+database engine does not yet exist, we have to build it on top of existing 
+engines.&nbsp; In my previous articles, I discussed how a semantic database 
+could be built on top of a SQL database.&nbsp; In this article, we will explore 
+how a semantic database can be built on top of a NoSQL database, specifically 
+MongoDB, and illustrate some of the advantages of using a NoSQL database.</p>
+<p>With the advent in December 2015 of MongoDB version 3.2, this became much 
+easier (and realistic) to do, because version 3.2 supports left outer joins with 
+the $lookup aggregator.</p>
+<h2>The Foundational Concepts of a Semantic Database</h2>
+<p>Fundamentally, a semantic database captures relationships.&nbsp; There are 
+two primary kinds of relationships:</p>
+<ol>
+	<li>Static, implicit relationships that define the structure (give meaning) 
+	to a semantic term (a symbol).&nbsp; These are typically expressed with the 
+	same terms used in object oriented programming &quot;has a&quot; and &quot;is a kind of.&quot;</li>
+	<li>Static or dynamic explicit relationships, where the relationship itself 
+	has a meaning expressed in a semantic term and where dynamic relationships 
+	can change over time.&nbsp; In programming, these relationships are usually 
+	expressed implicitly in the code, for example, a dictionary or other 
+	key-value pair collections.&nbsp; Dynamic relationships often have a time 
+	frame -- a beginning and an ending.</li>
+</ol>
+<p>I've written about explicit dynamic relationships in my series on 
+Relationship Oriented Programming:</p>
+<p><a href="http://www.codeproject.com/Articles/294402/Romeo-and-Juliet">Romeo 
+and Juliet</a><br>
+<a href="http://www.codeproject.com/Articles/298818/Relationship-Oriented-Programming">
+Relationship Oriented Programming</a><br>
+<a href="http://www.codeproject.com/Articles/307638/Do-You-Really-Want-To-Be-Agile">
+Do You Really Want to be Agile?</a><br>
+<a href="http://www.codeproject.com/Articles/327289/ROP">Relationship Oriented 
+Programming&nbsp; - the IDE plus More on Agile Project Management</a></p>
+<p>A semantic database actually combines the qualities of semantics and 
+relationality, as we will demonstrate here.</p>
+<h3>An Example of a Static, Implicit Semantic Relationship</h3>
+<p>A person's name is a good example of implicit semantic relationships.&nbsp; 
+People's names (but not in all cultures and of course there are variances even 
+within a culture) consist of a first name and last name.&nbsp; The symbols 
+&quot;first name&quot; and &quot;last name&quot; are themselves specializations of the symbol 
+&quot;name&quot;.&nbsp; Finally, the symbol &quot;name&quot; is a specialization of the symbol (in 
+this data type) &quot;string.&quot;&nbsp; These are all &quot;has a&quot; and &quot;is a kind of&quot; 
+relationships.</p>
+<p>[graphic]</p>
+<h3>Examples of an Explicit Relationship</h3>
+<p>Relationships exist between specialized semantic types, and we can 
+sub-categorize them into static and dynamic relationships.</p>
+<h4>Examples of a Static Relationship</h4>
+<p>Fixed relationships are those that never change over time.&nbsp; For example, 
+a person always has a relationship to two other people, &quot;mother&quot; and &quot;father.&quot;&nbsp; 
+During a person's lifetime, there is a static relationship between the person 
+and their birth sign (Leo, Gemini, etc.)&nbsp; Of course, the stars that make up 
+that constellation are actually in a dynamic relationship.&nbsp; </p>
+<h4>Examples of a Dynamic Relationship </h4>
+<p>In contrast to a static relationship, not every person has a son or daughter.&nbsp; 
+This relationship may come into existence, and when it does, it's associated 
+with a particular timestamp.&nbsp; A person's name can be a dynamic relationship 
+-- consider nicknames and aliases.&nbsp; Ownership, residence, marriage, 
+religious affiliation, rap sheet, party affiliation -- these are are example of 
+potentially dynamic relationships.&nbsp; Most relationships are dynamic, 
+occurring (and possibly recurring) in a particular time interval.</p>
+<h4>Explicit Relationships are Themselves Semantic </h4>
+<p>Relationships such as &quot;mother&quot;, &quot;daughter&quot;, &quot;Republican&quot;, &quot;Buddhist&quot; are 
+semantic.&nbsp; They express either a relationship or a state, so that we can 
+say:</p>
+<p>&quot;[X] is the [Y] of [Z]&quot;&nbsp; -- expresses the relationship, as in, &quot;Marc is 
+the son of Elisabeth&quot;</p>
+<p>or</p>
+<p>&quot;[X] is a [Y]&quot;&nbsp; -- expresses a relational state, as in, &quot;Marc is an 
+Anthroposophist&quot;</p>
+<p>or</p>
+<p>&quot;[X] [Y] [Z]&quot;&nbsp; -- expresses an activity, as in &quot;Marc owns a cat&quot;</p>
+<p>These are all semantically (haha) describing relationships.&nbsp; When we say 
+something stateful, such as &quot;[X] is a [Y]&quot;, we can convert this to a 
+prepositional phrase to describe the relationship, becoming &quot;[X] is [Z] with 
+[Y]&quot; or similar, though you may have to exercise your imagination a bit.&nbsp; 
+For example, &quot;Marc is a man&quot;, as a state of being, can be described relationally 
+as &quot;Marc is a human with male gender&quot;, or &quot;Marc has the gender male.&quot;&nbsp; In 
+either case, we've done something useful -- we've identified a class of state 
+(gender) that lets us describe explicitly the relationship between Marc and a 
+gender.&nbsp; Enough though with language semantics!</p>
+<h3>Structural Relationship and Symbol Relationship</h3>
+<p>A semantic database must capture both the hierarchy, the structure, of a 
+symbol as well as the symbol's relationship to other symbols.&nbsp; If, for 
+example, we have two symbols, one for a person's name and another for an 
+address, we can easily query for atypical relationships: &quot;give me all the people 
+who's first names are also street names in the town they live in.&quot;&nbsp; </p>
+<h4>The advantage of a NoSQL Database</h4>
+<p>While this is a query one can easily imagine in a SQL database, it assumes 
+that the schema already exists in which to make this query.&nbsp; The advantage 
+of a NoSQL database is that the schema itself is dynamic:</p>
+<ol>
+	<li>The structure of implicit symbols change (think of how names and 
+	addresses vary among cultures.)</li>
+	<li>New symbols can be easily added (simply add a new collection.)</li>
+	<li>New relationships between symbols can be easily added (simply add a 
+	collection with two fields associating the ID's of two collections.)</li>
+</ol>
+<p>In a SQL database, this would require manipulating the schema, whereas in a 
+NoSQL database, this is unnecessary (though one still wants to pay attention to 
+indexing for performance reasons.)</p>
+<p>Using a NoSQL database eliminates a considerable amount of the work required 
+in simulating a true semantic database, but as mentioned earlier, until the 
+advent of the $lookup aggregator, doing so was relegated to the client-side 
+implementation rather than the being handled by the server-side.&nbsp; Handling 
+it on the client-side was not, in our opinion, a feasible solution because of 
+the memory and bandwidth required to pull across all the records of one 
+collection simply to eliminate many of them with a left join of another 
+collection, which also had to be read fully into client-side memory.&nbsp; 
+Happily, the MongoDB $lookup aggregator solves that problem.</p>
+<h4>A NoSQL Database is Still Not a Semantic Database</h4>
+<p>There is still considerable work that needs to be done (as is also true for a 
+SQL database), but that work is really only in the realm of:</p>
+<ul>
+	<li>creating collections</li>
+	<li>creating the queries dynamically at runtime</li>
+	<li>maintaining a normalized database</li>
+	<li>reference counting<ul>
+		<li>handling inserts so that data is not duplicated</li>
+		<li>handling deletes so that data being referenced by other collections 
+		is not deleted until the number of references is 0</li>
+		<li>handling updates so that data being referenced by other collections 
+		is maintained and only the parent reference changes</li>
+	</ul>
+	</li>
+</ul>
+<h4>Normalized vs. Denormalized Data in a Semantic Database</h4>
+<p>A NoSQL database easily handles denormalized database--a sub-document within 
+a document.&nbsp; It is of course easy to create a denormalized schema in a SQL 
+database as well, which is the bane of most legacy databases.&nbsp; The golden 
+rule with a semantic database is:</p>
+<ul>
+	<li>All data in normalized!</li>
+</ul>
+<p>A semantic database relies on the fact that the data is normalized -- a 
+relationship between two symbols is based on a many-to-many relationship 
+collection.&nbsp; It is NOT built on comparing field values.&nbsp; Using the 
+person name and street address example earlier, a typical SQL query would look 
+like this:</p>
+<pre>select * from Person p
+left join Address a on a.StreetName = p.FirstName</pre>
+<p>A <i>semantic</i> query looks like this (in SQL):</p>
+<pre>select * from Name n                                  -- Name symbol
+left join FirstName fn on fn.NameId = n.Id            -- n:m collection
+left join PersonName pn on pn.FirstNameId = n.NameId  -- n:m collection
+left join Person p on p.Id = pn.PersonId              -- Person symbol, having a Name association through &quot;pn&quot;
+left join StreetName sn on sn.NameId = n.Id           -- n:m collection
+left join AddressStreetName asn on asn.StreetNameId = sn.Id -- n:m collection
+left join Address a on a.Id = asn.AddressId           -- Address symbol, having a StreetName association through &quot;asn&quot;</pre>
+<p>This looks horrid (and I'm not sure I even got it right), and it is, but it 
+expresses both the semantic structure and the relationship between two otherwise 
+unrelated symbols:</p>
+<p>[graphic]</p>
+<h4>So What's the Point?</h4>
+<p>[key]</p>
+<p>The point is that with a semantic database, relationships that are not 
+explicit between two symbols can still be queried.&nbsp; One can, for example, 
+ask of a semantic database: </p>
+<ul>
+	<li>can I relate a Person and an Address via the person's first name?</li>
+	<li>what are the ways I can relate a Person and an Address other than an 
+	explicit relationship?&nbsp;&nbsp;&nbsp; </li>
+</ul>
+<p>A semantic database can recurse through the semantic structure to discover 
+(and validate) new ways of relating data!&nbsp; A non-semantic database (whether 
+in SQL or NoSQL) simply cannot do that, because there is no discoverable path 
+from &quot;FirstName&quot; to &quot;StreetName&quot;.&nbsp; </p>
+<p>[key]</p>
+<p>A semantic database stand apart from the rest of the database world in its 
+ability to discover new relationships based not on explicitly defined structural 
+or dynamic relationships but on relationships that result in shared semantics.</p>
+<h4>Applications</h4>
+<p>Three applications come to mind immediately:</p>
+<ol>
+	<li>Big Data</li>
+	<li>Internet of Things</li>
+	<li>Records Management</li>
+</ol>
+<p>The analysis of Big Data (&quot;data sets so large or complex that traditional 
+data processing applications are inadequate&quot; --
+<a href="https://en.wikipedia.org/wiki/Big_data">
+https://en.wikipedia.org/wiki/Big_data</a>) is, in my uninformed opinion, still 
+reliant on human beings explicitly determining the relationships between data 
+sets.&nbsp; A semantic database could easily be queried for previously unknown 
+relationships, as well as facilitating the association of disparate data sets 
+with explicit relational meaning.</p>
+<p>Second, as with Big Data, the Internet of Things is going to be generating 
+vast amounts of data.&nbsp; In my opinion, the only way to successfully 
+correlate that data into something that has meaning beyond the initial dataset 
+is to make it semantic and store it in a semantic database.</p>
+<p>Records Management (things like medical, emergency, criminal) is already a 
+vast, messy, and uncorrelated system of information.&nbsp; Furthermore, it is 
+always changing:</p>
+<ul>
+	<li>in schema -- the information people want to track</li>
+	<li>in lifecycle -- illnesses come (and hopefully go), fires are put out, 
+	people commit new crimes, etc...</li>
+	<li>in relationship -- relationships between people and things are always 
+	changing</li>
+</ul>
+<p>A semantic database is a solution to the critical problem of diverse, 
+incompatible, and limited databases that currently hold our public and 
+not-so-private information.</p>
+<h2>Implementation</h2>
+<p>As stated earlier, in a true semantic database, we could ask these &quot;can I 
+relate...&quot; and &quot;give me the intersection of ...&quot; questions and have the 
+server-side do the heavy lifting.&nbsp; But since a true semantic database 
+doesn't exist, we have to do that heavy lifting ourselves.&nbsp; So, here 
+goes...</p>
+<h3>What You'll Need</h3>
+<p>If you've never used MongoDB with C#, you'll need to:</p>
+<ul>
+	<li><a href="https://www.mongodb.org/downloads#production">Download</a> and 
+	install the MongoDB server</li>
+	<li><a href="https://mongodb.github.io/mongo-csharp-driver/">Download</a> 
+	and install the 2.2.0 or greater MongoDB .NET Driver</li>
+	<li>Run the MongoDB server, <code>mongod.exe</code>, either in a console window or as a 
+	service<ul>
+		<li>The 3.2 64 bit version of <code>mongod.exe</code> is typically found in <code>C:\Program Files\MongoDB\Server\3.2\bin</code></li>
+	</ul>
+	</li>
+	<li>Optionally <a href="http://app.robomongo.org/">download</a> and install 
+	RoboMongo, so you can inspect your collections in a nice GUI.</li>
+</ul>
+<h3>Test Driven Development</h3>
+<p>This is a good usage of test driven development, as we can state a lot about 
+the preconditions, functions, and post-conditions that we expect from a semantic 
+database.&nbsp; These are the tests we want to perform (the term &quot;collection&quot; 
+refers here to a NoSQL collection):</p>
+<ol>
+	<li>Creation of a concrete semantic type collection</li>
+	<li>Creation of a hierarchical semantic type, demonstrating how non-concrete 
+	specializations (sounds like an oxymoron) results in both concrete and 
+	many-to-many relationship collections</li>
+	<li>Define relationships between semantic types with a many-to-many 
+	relationship collection</li>
+	<li>Relationships:<ol>
+		<li>Be able to ask &quot;what are explicit relationships of a semantic type?&quot;</li>
+		<li>Be able to ask &quot;what are discoverable (implicit) relationships of a 
+		semantic type?&quot;</li>
+		<li>Be able to ask &quot;what is the structure of this semantic type?&quot;</li>
+	</ol>
+	</li>
+	<li>For both concrete and specialized semantic types:<ol>
+		<li>Insert: creating automatically the many-to-many relationship 
+		instance documents and concrete collection documents.</li>
+		<li>Update:
+		<ol>
+			<li>updating a singleton document</li>
+			<li>decoupling a document with multiple references into two discrete 
+			documents and updating many-to-many references</li>
+		</ol>
+		</li>
+		<li>Delete:<ol>
+			<li>deleting a singleton document and its hierarchy</li>
+			<li>deleting hierarchy collections only when a document is 
+			referenced by more than one specialized semantic instance</li>
+		</ol>
+		</li>
+		<li>Query:<ol>
+			<li>Query a concrete semantic type</li>
+			<li>Query a specialized concrete type, auto-generating the joins to 
+			resolve down to the concrete instance</li>
+			<li>Query two or more semantic types, auto-generating the joins to 
+			associate the semantic types</li>
+		</ol>
+		</li>
+	</ol>
+	</li>
+</ol>
+<h3>Naming Conventions</h3>
+<p>The following naming conventions are used:</p>
+<ul>
+	<li>collection and database names are Camel case (the first letter of an 
+	identifier is lowercase and the first letter of each subsequent concatenated 
+	word is capitalized.)</li>
+	<li>collections are singular in name</li>
+	<li>field names are Camel case</li>
+	<li>many-to-many collections<ul>
+		<li>singular name</li>
+		<li>the two collection objects referenced are separated by an underscore</li>
+		<li>the ID's binding the collections in the form:<ul>
+			<li>[collectionName1]Id</li>
+			<li>[collectionName2]Id</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+</ul>
+<h3>Creation of a Concrete Semantic Type Collection</h3>
+<p>We'll start with creating some concrete semantic types.&nbsp; A concrete 
+semantic type usually describes a single concrete type, so it's pretty basic.&nbsp; 
+There is a always a question with regards to the extreme of creating a concrete 
+type.&nbsp; For example, we can define a phone number:</p>
+<p>PhoneNumber: string (or even number)</p>
+<p>or:</p>
+<ul>
+	<li>phoneNumber<ul>
+		<li>countryCode : int</li>
+		<li>areaCode : int</li>
+		<li>exchange : int</li>
+	<li>subscriberId : int</li>
+	</ul>
+</li>
+</ul>
+<p>or:</p>
+<ul>
+	<li>phoneNumber<ul>
+		<li>countryCode<ul>
+			<li>number : int</li>
+		</ul>
+	</li>
+	<li>areaCode<ul>
+		<li>number : int</li>
+	</ul>
+	</li>
+	<li>exchange<ul>
+			<li>number : int</li>
+		</ul>
+	</li>
+	<li>subscriberId<ul>
+		<li>number : int</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+</ul>
+<p>No, we will not break down &quot;number&quot; into bits 0-32!&nbsp; The last example 
+represents over-specification.&nbsp; We can determine when we are 
+over-specifying a semantic type by asking &quot;are we moving from something specific 
+back to something general?&quot;&nbsp; For example:</p>
+<ul>
+	<li>Phone number to country code, area code, exchange and subscriber ID is 
+	moving from general to specific.</li>
+	<li>country code to &quot;number&quot; is moving from specific to general.</li>
+</ul>
+<p>This gives us a clearly defined way of deciding when to stop the hierarchy of 
+types.</p>
+<p>[aside]</p>
+<p>Rules / Validation</p>
+<p>Country codes, area codes, exchanges -- they all have certain rules, so even 
+though they are integers, they have format rules, minimum and maximum length 
+constraints, and so forth.&nbsp; We will eventually (but not in this article) 
+want to associate a concrete type with a collection of rules from a rule table.&nbsp;
+</p>
+<p>[note] </p>
+<p>The more specific we define a semantic type, the more likely it is that we 
+will run into representational conflicts, especially cultural ones.&nbsp; Not 
+all countries comply with the
+<a href="https://en.wikipedia.org/wiki/North_American_Numbering_Plan">North 
+American Numbering Plann</a> -- only 24 apparently do so.</p>
+<p>Our first semantic types are therefore:</p>
+<ul>
+	<li>countryCode</li>
+	<li>areaCode</li>
+	<li>exchange</li>
+<li>subscriberId</li>
+</ul>
+<p>We observe that a semantic type then always terminates in a field we will 
+call &quot;value&quot; and furthermore, we note that a concrete semantic type never has 
+more than one value field.&nbsp; If it did, it would be a composite type, and we 
+would want to break this down into its constituent sub-types.&nbsp; So here we 
+have another rule:</p>
+<p><i>a concrete semantic type often has only one value field.</i></p>
+<p>This may at first seem very strange, counter-intuitive, and inefficient, but 
+it allows us to fully express data semantically.&nbsp; Lookup collections 
+(key-value pairs) are one exception to this rule.</p>
+<p>[test icon]</p>
+<pre>[TestMethod]
+public void CreateConcreteCollection()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(&quot;{name: 'countryCode'}&quot;);
+  sd.InstantiateSchema(schema);
+  List&lt;string&gt; collections = sd.GetCollections();
+  Assert.IsTrue(collections.Count == 1, &quot;Expected 1 collection.&quot;);
+  Assert.IsTrue(collections[0] == &quot;countryCode&quot;, &quot;Collection does not match expected name&quot;);
+}</pre>
+<p>The workhorse for this implementation is a ridiculous workaround because of a 
+bug in 2.2.0 (this kind of bug really leaves a sour taste when it comes to open 
+source projects):</p>
+<pre>public void CreateCollection(string collectionName)
+{
+  // This throws a NullReferenceException!
+  // See here: https://jira.mongodb.org/browse/CSHARP-1524
+  // This is apparently fixed in version 2.2.1
+  // db.CreateCollection(collectionName);
+
+  // For now, we use this workaround:
+
+  // As per the documentation: MongoDB creates collections automatically when they are first used, so you only need to call this method if you want to provide non-default options.
+  // What we do here is create a collection with a single entry, then delete that item, thus resulting in an empty collection. 
+  // While I get the &quot;don't create it until you need it&quot; concept, there are reasons (like my unit tests) for why I want the collection actually physically created.
+  var data = new BsonDocument(collectionName, &quot;{Value : 0}&quot;);
+  var collection = db.GetCollection&lt;BsonDocument&gt;(collectionName);
+  collection.InsertOne(data);
+  var result = collection.DeleteOne(new BsonDocument(&quot;_id&quot;, data.Elements.Single(el =&gt; el.Name == &quot;_id&quot;).Value));
+}</pre>
+<h3>Create a Hierarchical Semantic Type</h3>
+<p>Here we test creating collections from a hierarchy:</p>
+<pre>[TestMethod]
+public void CreateSpecializedCollection()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(@&quot;
+  {
+    name: 'phoneNumber', 
+    subtypes:
+    [
+      {name: 'countryCode'},
+      {name: 'areaCode'},
+      {name: 'exchange'},
+      {name: 'subscriberId'},
+    ]
+  }&quot;);
+  sd.InstantiateSchema(schema);
+  List&lt;string&gt; collections = sd.GetCollections();
+  Assert.IsTrue(collections.Count == 5, &quot;Expected 5 collections.&quot;);
+  Assert.IsTrue(collections.Contains(&quot;phoneNumber&quot;));
+  Assert.IsTrue(collections.Contains(&quot;countryCode&quot;));
+  Assert.IsTrue(collections.Contains(&quot;areaCode&quot;));
+  Assert.IsTrue(collections.Contains(&quot;exchange&quot;));
+  Assert.IsTrue(collections.Contains(&quot;subscriberId&quot;));
+}</pre>
+<p>Again, there's no magic here -- empty collections are created:</p>
+<p><img border="0" src="schema2.png" width="171" height="133"></p>
+<p>Because these are schema-less document collections, there of course are no 
+field definitions.</p>
+<h3>Insert Into a Concrete Semantic Type</h3>
+<p>Here we test inserting records into a concrete semantic type.&nbsp; The 
+backing implementation is very bare-bones, as we still have to write the more 
+complicated, and interesting, insertion of a semantic hierarchy.&nbsp; But 
+first, the basic test:</p>
+<pre>[TestMethod]
+public void InsertConcreteTypeTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(@&quot;
+  {
+    name: 'countryCodeLookup', 
+    concreteTypes:
+    {
+      value: 'System.Int32',
+      name: 'System.String'
+    }
+  }&quot;);
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 1, &quot;Collection should be length of 1.&quot;);
+
+  sd.Insert(schema, &quot;{value: 1, name: 'United States'}&quot;);
+  sd.Insert(schema, &quot;{value: 20, name: 'Egypt'}&quot;);
+  sd.Insert(schema, &quot;{value: 30, name: 'Greece'}&quot;);
+
+  List&lt;string&gt; json = sd.GetAll(&quot;countryCode&quot;);
+
+  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));
+  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot; }&quot;));
+  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot; }&quot;));
+}</pre>
+<p>and the basic implementation (note that it completely ignores the schema):</p>
+<pre>public void Insert(Schema schema, string json)
+{
+  db.GetCollection&lt;BsonDocument&gt;(schema.Name).InsertOne(BsonDocument.Parse(json));
+}</pre>
+<p><img border="0" src="inserttest.png" width="591" height="289"></p>
+<h3>Insert Into a Semantic Hierarchy</h3>
+<p>Now, with regards to the above implementation, the astute reader may say, 
+&quot;well, isn't the country a semantic type?&quot;&nbsp; Indeed so, so let's create a 
+proper semantic hierarchy and write a test for inserting into a hierarchy:</p>
+<h4>The Name Collection</h4>
+<p>The collection &quot;name&quot; is a strange beast.&nbsp; It is a semantic 
+generalization, but it also has a specific meaning -- it is the name of 
+something.&nbsp; We humans are all about naming things, Arthur C. Clarke even 
+wrote a short story about the human race being created solely for the purpose of 
+listing all the names of God, after which the universe ended -- <u>
+<a href="http://downlode.org/Etext/nine_billion_names_of_god.html">The Nine 
+Billion Names of God</a></u>.&nbsp; Therefore, &quot;name&quot; is a special collection in 
+a semantic database, so that entities can be named.</p>
+<p>TODO: Notice that we're still inserting a flattened hierarchy.&nbsp; We'll 
+look at resolving duplicate field names and hierarchical inserts later on.</p>
+<p>[test]</p>
+<pre>[TestMethod]
+public void InsertHierarchyTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(@&quot;
+  {
+    name: 'countryCode', 
+    concreteTypes:
+    {
+      value: 'System.Int32',
+    },
+    subtypes: 
+    [
+      {
+        name: 'countryName', 
+        subtypes: 
+        [
+          {
+            name: 'name', 
+            concreteTypes:
+            {
+              value: 'System.String'
+            }
+          }
+        ]
+      }
+    ]
+  }&quot;);
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+}</pre>
+<p>[key]</p>
+<p>Notice the hierarchy we are creating, and that the middle semantic type, &quot;countryName&quot;, 
+does not have any concrete values.&nbsp; Why do this?&nbsp; Because 
+semantically, it allows us later to query two different things:</p>
+<ol>
+	<li>Give me all the names of things that have names</li>
+	<li>Give me all the names of countries</li>
+</ol>
+<p>[TODO] We'll illustrate this later.</p>
+<p>Notice how the top level implementation has become a bit more complicated, 
+recursing into the schema structure, removing concrete types as we recurse, and 
+adding reference ID's to parent's JSON object.</p>
+<pre>public string Insert(Schema schema, JObject jobj)
+{
+  string id = null;
+
+  if (schema.IsConcreteType)
+  {
+    id = Insert(schema.Name, jobj);
+  }
+  else
+  {
+    JObject currentObject = GetConcreteObjects(schema, jobj);
+    JObject subjobj = RemoveCurrentConcreteObjects(schema, jobj);
+    RecurseIntoSubtypes(schema, currentObject, subjobj);
+    id = Insert(schema.Name, currentObject);
+  }
+
+  return id;
+}</pre>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</body>
+
+</html>
