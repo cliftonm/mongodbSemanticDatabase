@@ -9,6 +9,8 @@ using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+using Clifton.Core.ExtensionMethods;
+
 namespace Clifton.MongoSemanticDatabase
 {
     public class SemanticDatabase
@@ -75,31 +77,105 @@ namespace Clifton.MongoSemanticDatabase
 
 		public string Insert(Schema schema, JObject jobj)
 		{
+			BsonDocument doc = BsonDocument.Parse(jobj.ToString());
+
+			return Insert(schema, doc);
+		}
+
+		protected string Insert(Schema schema, BsonDocument doc)
+		{
 			string id = null;
 
 			if (schema.IsConcreteType)
 			{
 				int refCount;
 
-				if (IsDuplicate(schema.Name, jobj, out id, out refCount))
+				if (IsDuplicate(schema.Name, doc, out id, out refCount))
 				{
 					IncrementRefCount(schema.Name, id, refCount);
 				}
 				else
 				{
-					JObject withRef = AddRef1(jobj);
+					BsonDocument withRef = AddRef1(doc);
 					id = Insert(schema.Name, withRef);
 				}
 			}
 			else
 			{
-				JObject currentObject = GetConcreteObjects(schema, jobj);
-				JObject subjobj = RemoveCurrentConcreteObjects(schema, jobj);
+				BsonDocument currentObject = GetConcreteObjects(schema, doc);
+				BsonDocument subjobj = RemoveCurrentConcreteObjects(schema, doc);
 				RecurseIntoSubtypes(schema, currentObject, subjobj);
-				id = Insert(schema.Name, currentObject);
+				int refCount;
+
+				if (IsDuplicate(schema.Name, currentObject, out id, out refCount))
+				{
+					IncrementRefCount(schema.Name, id, refCount);
+				}
+				else
+				{
+					BsonDocument withRef = AddRef1(currentObject);
+					id = Insert(schema.Name, withRef);
+				}
 			}
 
 			return id;
+		}
+
+		public List<BsonDocument> Query(Schema schema, string id = null)
+		{
+			List<BsonDocument> records = new List<BsonDocument>();
+
+			records = GetAll(schema.Name, id);
+
+			foreach (BsonDocument record in records)
+			{
+				record.Remove("_ref");
+
+				foreach (Schema subtype in schema.Subtypes)
+				{
+					string childIdName = subtype.Name + "Id";
+					// Remove the FK ID, as we don't want it in the final recordset
+					string childId = record[childIdName].ToString();
+					record.Remove(childIdName);
+					List<BsonDocument> childRecords = Query(subtype, childId);
+
+					// TODO: Assert that childRecords <= 1, and we know only one child record exists because we don't allow duplicates.
+					if (childRecords.Count == 1)
+					{
+						childRecords[0].Elements.ForEach(p => record.Add(p.Name, childRecords[0][p.Name]));
+					}
+				}
+			}
+
+			return records;
+		}
+
+		/// <summary>
+		/// Returns all but the _id field of a MongoDB collection.
+		/// </summary>
+		public List<BsonDocument> GetAll(string collectionName, string id=null)
+		{
+			BsonDocument filter = GetIdFilterDocument(id);
+			// Empty filter, and remove the _id from the set if returned fields.
+			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(filter).Project("{_id:0}").ToList();
+
+			return docs;
+		}
+
+		protected BsonDocument GetIdFilterDocument(string id)
+		{
+			BsonDocument ret;
+
+			if (id == null)
+			{
+				ret = new BsonDocument();			// empty filter.
+			}
+			else
+			{
+				ret = new BsonDocument("_id", new ObjectId(id));
+			}
+
+			return ret;
 		}
 
 		protected void IncrementRefCount(string collectionName, string id, int refCount)
@@ -111,20 +187,20 @@ namespace Clifton.MongoSemanticDatabase
 			collection.UpdateOne(filter, update);
 		}
 
-		protected JObject AddRef1(JObject jobj)
+		protected BsonDocument AddRef1(BsonDocument jobj)
 		{
-			JObject withRef = new JObject(jobj);
+			BsonDocument withRef = new BsonDocument(jobj);
 			withRef.Add("_ref", 1);
 
 			return withRef;
 		}
 
-		protected bool IsDuplicate(string collectionName, JObject jobj, out string id, out int refCount)
+		protected bool IsDuplicate(string collectionName, BsonDocument doc, out string id, out int refCount)
 		{
 			bool exists = false;
 			id = null;
 			refCount = 0;
-			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(BsonDocument.Parse(jobj.ToString())).ToList();
+			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(doc).ToList();
 			exists = docs.Count == 1;
 			// TODO: Assert that docs.Count is never > 1
 
@@ -137,9 +213,8 @@ namespace Clifton.MongoSemanticDatabase
 			return exists;
 		}
 
-		protected string Insert(string collectionName, JObject jobj)
+		protected string Insert(string collectionName, BsonDocument doc)
 		{
-			BsonDocument doc = BsonDocument.Parse(jobj.ToString());
 			db.GetCollection<BsonDocument>(collectionName).InsertOne(doc);
 			BsonValue bid = doc.Elements.Single(el => el.Name == "_id").Value;
 			string id = bid.ToString();
@@ -147,56 +222,40 @@ namespace Clifton.MongoSemanticDatabase
 			return id;
 		}
 
-		protected JObject GetConcreteObjects(Schema schema, JObject jobj)
+		protected BsonDocument GetConcreteObjects(Schema schema, BsonDocument doc)
 		{
-			JObject newjobj = new JObject();
+			BsonDocument newDoc = new BsonDocument();
 
 			// Add the current schema's concrete types to the new JSON object.
 			foreach (string concreteType in schema.ConcreteTypes.Keys)
 			{
-				newjobj.Add(concreteType, jobj[concreteType]);
+				newDoc.Add(concreteType, doc[concreteType]);
 			}
 
-			return newjobj;
+			return newDoc;
 		}
 
-		protected JObject RemoveCurrentConcreteObjects(Schema schema, JObject jobj)
+		protected BsonDocument RemoveCurrentConcreteObjects(Schema schema, BsonDocument doc)
 		{
-			JObject subjobj = new JObject(jobj);
+			BsonDocument subdoc = new BsonDocument(doc);
 
 			foreach (string concreteType in schema.ConcreteTypes.Keys)
 			{
-				subjobj.Remove(concreteType);
+				subdoc.Remove(concreteType);
 			}
 
-			return subjobj;
+			return subdoc;
 		}
 
-		protected void RecurseIntoSubtypes(Schema schema, JObject currentObject, JObject subjobj)
+		protected void RecurseIntoSubtypes(Schema schema, BsonDocument currentObject, BsonDocument subdoc)
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				string subtypeId = Insert(subtype, subjobj);
+				string subtypeId = Insert(subtype, subdoc);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
-				currentObject.Add(subtype.Name + "Id", subtypeId);
+				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
 			}
-		}
-
-
-		public List<string> GetAll(string collectionName)
-		{
-			List<string> ret = new List<string>();
-			// Empty filter, and remove the _id from the set if returned fields.
-			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(new BsonDocument()).Project("{_id:0}").ToList();
-
-			foreach (BsonDocument doc in docs)
-			{
-				string json = doc.ToJson();
-				ret.Add(json);
-			}
-
-			return ret;
 		}
 
 		protected void CreateConcreteType(Schema typeDef)

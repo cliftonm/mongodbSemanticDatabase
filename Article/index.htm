@@ -242,7 +242,10 @@ goes...</p>
 <h3>Test Driven Development</h3>
 <p>This is a good usage of test driven development, as we can state a lot about 
 the preconditions, functions, and post-conditions that we expect from a semantic 
-database.&nbsp; These are the tests we want to perform (the term &quot;collection&quot; 
+database.&nbsp; As we implement each unit test, adding new behavioral 
+requirements, and implementing the methods to get the test to pass, you'll 
+notice that sometimes the previous tests and usually the implementation are 
+frequently refactored.&nbsp; These are the tests, conceptually, that we want to perform (the term &quot;collection&quot; 
 refers here to a NoSQL collection):</p>
 <ol>
 	<li>Creation of a concrete semantic type collection</li>
@@ -474,9 +477,9 @@ public void InsertConcreteTypeTest()
 
   List&lt;string&gt; json = sd.GetAll(&quot;countryCode&quot;);
 
-  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));
-  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot; }&quot;));
-  Assert.IsTrue(json.Contains(&quot;{ \&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot; }&quot;));
+  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));
+  Assert.IsTrue(json[1].Contains(&quot;{ \&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot; }&quot;));
+  Assert.IsTrue(json[2].Contains(&quot;{ \&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot; }&quot;));
 }</pre>
 <p>and the basic implementation (note that it completely ignores the schema):</p>
 <pre>public void Insert(Schema schema, string json)
@@ -534,6 +537,19 @@ public void InsertHierarchyTest()
   sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
   sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
   sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+
+  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));
+  Assert.IsTrue(json[1].Contains(&quot;{ \&quot;name\&quot; : \&quot;Egypt\&quot; }&quot;));
+  Assert.IsTrue(json[2].Contains(&quot;{ \&quot;name\&quot; : \&quot;Greece\&quot; }&quot;));
+
+  json = sd.GetAll(&quot;countryName&quot;);
+  Assert.IsTrue(json.Count==3);
+
+  json = sd.GetAll(&quot;countryCode&quot;);
+  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1&quot;));
+  Assert.IsTrue(json[1].Contains(&quot;{ \&quot;value\&quot; : 20&quot;));
+  Assert.IsTrue(json[2].Contains(&quot;{ \&quot;value\&quot; : 30&quot;));
 }</pre>
 <p>[key]</p>
 <p>Notice the hierarchy we are creating, and that the middle semantic type, &quot;countryName&quot;, 
@@ -565,11 +581,155 @@ adding reference ID's to parent's JSON object.</p>
 
   return id;
 }</pre>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<h3>Insert Duplicates Tests</h3>
+<p>We next delve into some further complexity: in a semantic database, we never 
+duplicate a record, regardless of where it is in the hierarchy.&nbsp; Instead, 
+we increment a reference count.&nbsp; </p>
+<p>[Key]</p>
+<p>In a semantic database, this fully normalizes the value associated with a 
+specific semantic type, such that we are never need to compare the values 
+between two semantic hierarchies because we rely on the normalization the data 
+in the semantic schema to create the &quot;joins&quot; between different semantic 
+structures.&nbsp; This works well when the entire schema for a database is well 
+designed but does not prevent us from having to do value comparisons between two 
+databases.</p>
+<p>[Test]</p>
+<pre>[TestMethod]
+public void InsertDuplicateHierarchyTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(@&quot;
+  {
+    name: 'countryCode', 
+    concreteTypes:
+    {
+      value: 'System.Int32',
+    },
+    subtypes: 
+    [
+      {
+        name: 'countryName', 
+        subtypes: 
+        [
+          {
+            name: 'name', 
+            concreteTypes:
+            {
+              value: 'System.String'
+            }
+          }
+        ]
+      }
+    ]
+  }&quot;);
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  List&lt;string&gt; json;
+
+  json = sd.GetAll(&quot;name&quot;);
+  Assert.IsTrue(json.Count == 1);
+  Assert.IsTrue(json[0].Contains(&quot;\&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+
+  json = sd.GetAll(&quot;countryName&quot;);
+  Assert.IsTrue(json.Count == 1);
+
+  json = sd.GetAll(&quot;countryCode&quot;);
+  Assert.IsTrue(json.Count == 1);
+  Assert.IsTrue(json[0].Contains(&quot;\&quot;value\&quot; : 1&quot;));
+
+  // Duplicate insert:
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  json = sd.GetAll(&quot;name&quot;);
+  Assert.IsTrue(json.Count == 1);
+  Assert.IsTrue(json[0].Contains(&quot;\&quot;_ref\&quot; : 2 }&quot;));
+
+  json = sd.GetAll(&quot;countryName&quot;);
+  Assert.IsTrue(json.Count == 1);
+  Assert.IsTrue(json[0].Contains(&quot;\&quot;_ref\&quot; : 2 }&quot;));
+
+  json = sd.GetAll(&quot;countryCode&quot;);
+  Assert.IsTrue(json.Count == 1);
+  Assert.IsTrue(json[0].Contains(&quot;\&quot;_ref\&quot; : 2 }&quot;));
+}</pre>
+<p>The insert method is refactored again to get this test to pass, but you 
+should see a pattern emerging here between a concrete semantic instance 
+insertion and a hierarchy insertion:</p>
+<pre>public string Insert(Schema schema, JObject jobj)
+{
+  string id = null;
+
+  if (schema.IsConcreteType)
+  {
+    int refCount;
+
+    if (IsDuplicate(schema.Name, jobj, out id, out refCount))
+    {
+      IncrementRefCount(schema.Name, id, refCount);
+    }
+    else
+    {
+      JObject withRef = AddRef1(jobj);
+      id = Insert(schema.Name, withRef);
+    }
+  }
+  else
+  {
+    JObject currentObject = GetConcreteObjects(schema, jobj);
+    JObject subjobj = RemoveCurrentConcreteObjects(schema, jobj);
+    RecurseIntoSubtypes(schema, currentObject, subjobj);
+    int refCount;
+
+    if (IsDuplicate(schema.Name, currentObject, out id, out refCount))
+    {
+      IncrementRefCount(schema.Name, id, refCount);
+    }
+    else
+    {
+      JObject withRef = AddRef1(currentObject);
+      id = Insert(schema.Name, withRef);
+    }
+  }
+
+  return id;
+}</pre>
+<h3>Concrete Semantic Query Test</h3>
+<p>This <code>Query</code> call for the a concrete semantic type is really nothing more than 
+a call to the <code>GetAll()</code> method, but we test it here anyways.</p>
+<pre>[TestClass]
+public class QueryTests
+{
+  [TestMethod]
+  public void ConcreteQueryTest()
+  {
+    SemanticDatabase sd = Helpers.CreateCleanDatabase();
+    Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+    Schema schema = Helpers.InstantiateSchema(@&quot;
+    {
+      name: 'countryCodeLookup', 
+      concreteTypes:
+      {
+        value: 'System.Int32',
+        name: 'System.String'
+      }
+    }&quot;);
+
+    sd.InstantiateSchema(schema);
+    Assert.IsTrue(sd.GetCollections().Count == 1, &quot;Collection should be length of 1.&quot;);
+  
+    sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+    List&lt;JObject&gt; records = sd.Query(schema);
+
+    Assert.IsTrue(records.Count == 1);
+    Assert.IsTrue(records[0].Contains(&quot;{\&quot;value\&quot;:1,\&quot;name\&quot;:\&quot;United States\&quot;&quot;));
+  }
+}</pre>
+<h3>Hierarchical Semantic Query Test</h3>
+<p>This query returns flattened records (so much for a document database!) of a 
+semantic instance at the specified hierarchy.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
