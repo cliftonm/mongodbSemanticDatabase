@@ -13,8 +13,8 @@ using Clifton.Core.ExtensionMethods;
 
 namespace Clifton.MongoSemanticDatabase
 {
-    public class SemanticDatabase
-    {
+	public class SemanticDatabase
+	{
 		protected IMongoClient client;
 		protected IMongoDatabase db;
 
@@ -39,7 +39,7 @@ namespace Clifton.MongoSemanticDatabase
 			// See here: https://jira.mongodb.org/browse/CSHARP-1524
 			// This is apparently fixed in version 2.2.1
 			// db.CreateCollection(collectionName);
-			
+
 			// For now, we use this workaround:
 
 			// As per the documentation: MongoDB creates collections automatically when they are first used, so you only need to call this method if you want to provide non-default options.
@@ -150,16 +150,51 @@ namespace Clifton.MongoSemanticDatabase
 			return records;
 		}
 
+		public List<BsonDocument> QueryServerSide(Schema schema, string id = null)
+		{
+			var collection = db.GetCollection<BsonDocument>(schema.Name);
+			List<string> projections = new List<string>();
+			List<string> pipeline = BuildQueryPipeline(schema, String.Empty, projections);
+			pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+			var aggr = collection.Aggregate();
+			pipeline.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
+			List<BsonDocument> records = aggr.ToList();
+
+			return records;
+		}
+
 		/// <summary>
 		/// Returns all but the _id field of a MongoDB collection.
 		/// </summary>
-		public List<BsonDocument> GetAll(string collectionName, string id=null)
+		public List<BsonDocument> GetAll(string collectionName, string id = null)
 		{
 			BsonDocument filter = GetIdFilterDocument(id);
 			// Empty filter, and remove the _id from the set if returned fields.
 			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(filter).Project("{_id:0}").ToList();
 
 			return docs;
+		}
+
+		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections)
+		{
+			List<string> pipeline = new List<string>();
+
+			schema.ConcreteTypes.ForEach(kvp => projections.Add(String.Format("'{0}':'${1}'", kvp.Key, parentName + kvp.Key)));
+
+			foreach (Schema subtype in schema.Subtypes)
+			{
+				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{0}'}} }},", subtype.Name, subtype.Name + "Id", parentName));
+				pipeline.Add(String.Format("{{$unwind: '${0}'}}", subtype.Name));
+				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Name + ".", projections);
+
+				if (subpipeline.Count > 0)
+				{
+					pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
+					pipeline.AddRange(subpipeline);
+				}
+			}
+
+			return pipeline;
 		}
 
 		protected BsonDocument GetIdFilterDocument(string id)
@@ -262,5 +297,5 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			CreateCollection(typeDef.Name);
 		}
-    }
+	}
 }

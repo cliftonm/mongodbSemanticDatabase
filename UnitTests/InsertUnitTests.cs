@@ -106,7 +106,7 @@ namespace UnitTests
 								name: 'name', 
 								concreteTypes:
 								{
-									value: 'System.String'
+									name: 'System.String'
 								}
 							}
 						]
@@ -161,7 +161,7 @@ namespace UnitTests
 								name: 'name', 
 								concreteTypes:
 								{
-									value: 'System.String'
+									name: 'System.String'
 								}
 							}
 						]
@@ -172,33 +172,41 @@ namespace UnitTests
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
 			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
 
 			List<BsonDocument> json;
 
 			json = sd.GetAll("name");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 			Assert.IsTrue(json[0].ToString().Contains("\"name\" : \"United States\""));
 
 			json = sd.GetAll("countryName");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 
 			json = sd.GetAll("countryCode");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 			Assert.IsTrue(json[0].ToString().Contains("\"value\" : 1"));
 
 			// Duplicate insert:
 			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
 			json = sd.GetAll("name");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 			Assert.IsTrue(json[0].ToString().Contains("\"_ref\" : 2"));
+			Assert.IsTrue(json[1].ToString().Contains("\"_ref\" : 1"));
+			Assert.IsTrue(json[2].ToString().Contains("\"_ref\" : 1"));
 
 			json = sd.GetAll("countryName");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 			Assert.IsTrue(json[0].ToString().Contains("\"_ref\" : 2"));
+			Assert.IsTrue(json[1].ToString().Contains("\"_ref\" : 1"));
+			Assert.IsTrue(json[2].ToString().Contains("\"_ref\" : 1"));
 
 			json = sd.GetAll("countryCode");
-			Assert.IsTrue(json.Count == 1);
+			Assert.IsTrue(json.Count == 3);
 			Assert.IsTrue(json[0].ToString().Contains("\"_ref\" : 2"));
+			Assert.IsTrue(json[1].ToString().Contains("\"_ref\" : 1"));
+			Assert.IsTrue(json[2].ToString().Contains("\"_ref\" : 1"));
 		}
 	}
 }

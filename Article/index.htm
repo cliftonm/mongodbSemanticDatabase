@@ -525,7 +525,7 @@ public void InsertHierarchyTest()
             name: 'name', 
             concreteTypes:
             {
-              value: 'System.String'
+              name: 'System.String'
             }
           }
         ]
@@ -616,7 +616,7 @@ public void InsertDuplicateHierarchyTest()
             name: 'name', 
             concreteTypes:
             {
-              value: 'System.String'
+              name: 'System.String'
             }
           }
         ]
@@ -728,15 +728,140 @@ public class QueryTests
   }
 }</pre>
 <h3>Hierarchical Semantic Query Test</h3>
+<h4>Client-Side</h4>
 <p>This query returns flattened records (so much for a document database!) of a 
 semantic instance at the specified hierarchy.</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<p>[Test]</p>
+<pre>[TestMethod]
+public void HierarchicalQueryTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.InstantiateSchema(@&quot;
+  {
+    name: 'countryCode', 
+    concreteTypes:
+    {
+      value: 'System.Int32',
+    },
+    subtypes: 
+    [
+      {
+        name: 'countryName', 
+        subtypes: 
+        [
+          {
+            name: 'name', 
+            concreteTypes:
+            {
+              name: 'System.String'
+            }
+          }
+        ]
+      }
+    ]
+  }&quot;);
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; json;
+
+  json = sd.Query(schema);
+  Assert.IsTrue(json.Count == 3);
+
+  Assert.IsTrue(json[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+  Assert.IsTrue(json[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(json[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<p>We can refactor the query for a client-side implementation:</p>
+<pre>public List&lt;BsonDocument&gt; Query(Schema schema, string id = null)
+{
+  List&lt;BsonDocument&gt; records = new List&lt;BsonDocument&gt;();
+
+  records = GetAll(schema.Name, id);
+
+  foreach (BsonDocument record in records)
+  {
+    record.Remove(&quot;_ref&quot;);
+
+    foreach (Schema subtype in schema.Subtypes)
+    {
+      string childIdName = subtype.Name + &quot;Id&quot;;
+      // Remove the FK ID, as we don't want it in the final recordset
+      string childId = record[childIdName].ToString();
+      record.Remove(childIdName);
+      List&lt;BsonDocument&gt; childRecords = Query(subtype, childId);
+
+      // TODO: Assert that childRecords &lt;= 1, and we know only one child record exists because we don't allow duplicates.
+      if (childRecords.Count == 1)
+      {
+        childRecords[0].Elements.ForEach(p =&gt; record.Add(p.Name, childRecords[0][p.Name]));
+      }
+    }
+  }
+
+  return records;
+}</pre>
+<h4>Server-Side</h4>
+<p>Conversely, we could build a MongoDB query to run the query server-side.&nbsp; In the Mongo console, it 
+would look like this:</p>
+<pre>db.countryCode.aggregate(
+  {$lookup: {from: &quot;countryName&quot;, localField:&quot;countryNameId&quot;, foreignField: &quot;_id&quot;, as: &quot;countryName&quot;} },
+  {$unwind: &quot;$countryName&quot;},
+  {$lookup: {from: &quot;name&quot;, localField:&quot;countryName.nameId&quot;, foreignField: &quot;_id&quot;, as: &quot;name&quot;} },
+  {$unwind: &quot;$name&quot;},
+  {$project: {&quot;value&quot;: &quot;$value&quot;, &quot;name&quot;: &quot;$name.name&quot;, &quot;_id&quot;:0} }
+)</pre>
+<p>See my article on
+<a href="http://www.codeproject.com/Articles/1077839/Working-with-MongoDBs-lookup-Aggregator">
+Working with MongoDB's $lookup Aggregator</a> to learn more about how to use 
+<code>$lookup</code> for joining collections.</p>
+<p>We'll extend our test to test server-side as well:</p>
+<pre>json = sd.QueryServerSide(schema);
+Assert.IsTrue(json.Count == 3);
+
+Assert.IsTrue(json[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+Assert.IsTrue(json[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+Assert.IsTrue(json[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));</pre>
+<p>We execute a server-side query, building the aggregators by inspecting the schema:</p>
+<pre>public List&lt;BsonDocument&gt; QueryServerSide(Schema schema, string id = null)
+{
+  var collection = db.GetCollection&lt;BsonDocument&gt;(schema.Name);
+  List&lt;string&gt; projections = new List&lt;string&gt;();
+  List&lt;string&gt; pipeline = BuildQueryPipeline(schema, String.Empty, projections);
+  pipeline.Add(String.Format(&quot;{{$project: {{{0}, '_id':0}} }}&quot;, String.Join(&quot;,&quot;, projections)));
+  var aggr = collection.Aggregate();
+  pipeline.ForEach(s =&gt; aggr = aggr.AppendStage&lt;BsonDocument&gt;(s));
+  List&lt;BsonDocument&gt; records = aggr.ToList();
+
+  return records;
+}</pre>
+<p>and:</p>
+<pre>protected List&lt;string&gt; BuildQueryPipeline(Schema schema, string parentName, List&lt;string&gt; projections)
+{
+  List&lt;string&gt; pipeline = new List&lt;string&gt;();
+
+  schema.ConcreteTypes.ForEach(kvp =&gt; projections.Add(String.Format(&quot;'{0}':'${1}'&quot;, kvp.Key, parentName + kvp.Key)));
+
+  foreach (Schema subtype in schema.Subtypes)
+  {
+    pipeline.Add(String.Format(&quot;{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{0}'}} }},&quot;, subtype.Name, subtype.Name + &quot;Id&quot;, parentName));
+    pipeline.Add(String.Format(&quot;{{$unwind: '${0}'}}&quot;, subtype.Name));
+    List&lt;string&gt; subpipeline = BuildQueryPipeline(subtype, subtype.Name + &quot;.&quot;, projections);
+
+    if (subpipeline.Count &gt; 0)
+    {
+      pipeline[pipeline.Count - 1] = pipeline.Last() + &quot;,&quot;;
+      pipeline.AddRange(subpipeline);
+    }
+  }
+
+  return pipeline;
+}</pre>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

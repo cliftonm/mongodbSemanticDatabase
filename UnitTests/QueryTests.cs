@@ -61,7 +61,7 @@ namespace UnitTests
 								name: 'name', 
 								concreteTypes:
 								{
-									value: 'System.String'
+									name: 'System.String'
 								}
 							}
 						]
@@ -78,6 +78,13 @@ namespace UnitTests
 			List<BsonDocument> json;
 
 			json = sd.Query(schema);
+			Assert.IsTrue(json.Count == 3);
+
+			Assert.IsTrue(json[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
+			Assert.IsTrue(json[1].ToString().Contains("\"value\" : 20, \"name\" : \"Egypt\""));
+			Assert.IsTrue(json[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
+
+			json = sd.QueryServerSide(schema);
 			Assert.IsTrue(json.Count == 3);
 
 			Assert.IsTrue(json[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
