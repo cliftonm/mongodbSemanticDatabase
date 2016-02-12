@@ -13,6 +13,11 @@ using Clifton.Core.ExtensionMethods;
 
 namespace Clifton.MongoSemanticDatabase
 {
+	public class SemanticDatabaseException : ApplicationException
+	{
+		public SemanticDatabaseException(string msg) : base(msg) { }
+	}
+
 	public class SemanticDatabase
 	{
 		protected IMongoClient client;
@@ -87,7 +92,7 @@ namespace Clifton.MongoSemanticDatabase
 			BsonDocument docOriginal = BsonDocument.Parse(jobjOriginal.ToString());
 			BsonDocument docNew = BsonDocument.Parse(jobjNew.ToString());
 
-			return Update(schema, docOriginal, docNew);
+			return Update(schema, docOriginal, docNew, null);
 		}
 
 		public void Delete(Schema schema, JObject jobj)
@@ -242,7 +247,7 @@ namespace Clifton.MongoSemanticDatabase
 		///		the super-type's "foreign key" reference must be updated
 		///		this process needs to recurse upwards through the hierarchy
 		/// </summary>
-		protected string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew)
+		protected string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew, string schemaId)
 		{
 			string id = null;
 
@@ -256,6 +261,7 @@ namespace Clifton.MongoSemanticDatabase
 				}
 				else
 				{
+					// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
 					DecrementRefCount(schema.Name, id, refCount);
 					id = Insert(schema, docNew);
 				}
@@ -263,20 +269,85 @@ namespace Clifton.MongoSemanticDatabase
 			else
 			{
 				BsonDocument currentOriginalObject = GetConcreteObjects(schema, docOriginal);
-				BsonDocument subOriginalJobj = RemoveCurrentConcreteObjects(schema, docOriginal);
-				BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
-				BsonDocument subNewJobj = RemoveCurrentConcreteObjects(schema, docNew);
-				UpdateRecurseIntoSubtypes(schema, currentOriginalObject, subOriginalJobj, currentNewObject, subNewJobj);
-				int refCount = GetRefCount(schema.Name, currentOriginalObject, out id);
+				BsonDocument record = null;
 
-				if (refCount == 1)
+				if (schemaId == null)
 				{
-					Update(schema.Name, id, currentOriginalObject, currentNewObject);
+					// We must use the concrete objects to determine the record.
+					// If there are no concrete objects, we have an error.
+					// There should be a single unique record for the concrete object.
+					if (currentOriginalObject.Elements.Count() == 0)
+					{
+						throw new SemanticDatabaseException("Cannot update the a semantic type starting with the abstract type " + schema.Name);
+					}
+
+					record = GetRecord(schema.Name, currentOriginalObject);
+
+					if (record == null)
+					{
+						throw new SemanticDatabaseException("The original record for the semantic type " + schema.Name + " cannot be found.\r\nData: " + currentOriginalObject.ToString());
+					}
 				}
 				else
 				{
-					DecrementRefCount(schema.Name, id, refCount);
-					id = Insert(schema, docNew);
+					// We use the subtype id to get the record.
+					record = GetRecord(schema.Name, new BsonDocument("_id", new ObjectId(schemaId)));
+
+					if (record == null)
+					{
+						throw new SemanticDatabaseException("An instance of " + schema.Name + " with _id = " + schemaId + " does not exist!");
+					}
+				}
+
+				BsonDocument subOriginalJobj = RemoveCurrentConcreteObjects(schema, docOriginal);
+
+				if (subOriginalJobj.Elements.Count() == 0)
+				{
+					// There is nothing further to do, as we're not changing anything further in the hierarchy.
+					// Update the current concrete types.
+					id = record.Elements.Single(el => el.Name == "_id").Value.ToString();
+					int refCount = record.Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+
+					if (refCount == 1)
+					{
+						BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+						Update(schema.Name, id, record, currentNewObject);
+					}
+					else
+					{
+						// TODO: THIS CODE PATH IS NOT TESTED!
+						// Now we have a problem -- something else is referencing this record other than our current hierarch, 
+						// but we don't know what.  But we're updating this particular type instance.  
+						// Do all the super-types reflect this change in the subtype?  We'll assume no.
+						// Only this hierarchy gets updated.
+						DecrementRefCount(schema.Name, id, refCount);
+						id = Insert(schema, docNew);
+
+						// Otherwise:
+						// All supertypes referencing this hierarchy get updated.
+						//BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+						//Update(schema.Name, id, record, currentNewObject);
+					}
+				}
+				else
+				{
+					BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+					BsonDocument subNewJobj = RemoveCurrentConcreteObjects(schema, docNew);
+					UpdateRecurseIntoSubtypes(schema, record, currentOriginalObject, subOriginalJobj, currentNewObject, subNewJobj);
+					// int refCount = GetRefCount(schema.Name, currentOriginalObject, out id);
+					id = record.Elements.Single(el => el.Name == "_id").Value.ToString();
+					int refCount = record.Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+
+					if (refCount == 1)
+					{
+						Update(schema.Name, id, record, currentNewObject);
+					}
+					else
+					{
+						// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
+						DecrementRefCount(schema.Name, id, refCount);
+						id = Insert(schema, docNew);
+					}
 				}
 			}
 
@@ -377,13 +448,15 @@ namespace Clifton.MongoSemanticDatabase
 			collection.UpdateOne(filter, update);
 		}
 
-		protected void DecrementRefCount(string collectionName, string id, int refCount)
+		protected bool DecrementRefCount(string collectionName, string id, int refCount)
 		{
 			--refCount;
 			var collection = db.GetCollection<BsonDocument>(collectionName);
 			var filter = new BsonDocument("_id", new ObjectId(id));
 			var update = Builders<BsonDocument>.Update.Set("_ref", refCount);
 			collection.UpdateOne(filter, update);
+
+			return refCount == 0;
 		}
 
 		protected BsonDocument AddRef1(BsonDocument jobj)
@@ -412,15 +485,31 @@ namespace Clifton.MongoSemanticDatabase
 			return exists;
 		}
 
-		protected int GetRefCount(string collectionName, BsonDocument doc, out string id)
+		protected BsonDocument GetRecord(string collectionName, BsonDocument filter)
+		{
+			BsonDocument record = null;
+			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(filter).ToList();
+			// TODO: Assert that docs length is 0 or 1.
+
+			if (docs.Count == 1)
+			{
+				record = docs[0];
+			}
+
+			return record;
+		}
+
+		protected int GetRefCount(string collectionName, BsonDocument filter, out string id)
 		{
 			id = null;
 			int refCount = 0;
-			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(doc).ToList();
-			// TODO: Assert that docs.Count == 1
+			BsonDocument record = GetRecord(collectionName, filter);
 
-			id = docs[0].Elements.Single(el => el.Name == "_id").Value.ToString();
-			refCount = docs[0].Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+			if (record != null)
+			{
+				id = record.Elements.Single(el => el.Name == "_id").Value.ToString();
+				refCount = record.Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+			}
 
 			return refCount;
 		}
@@ -481,18 +570,22 @@ namespace Clifton.MongoSemanticDatabase
 			}
 		}
 
-		protected void UpdateRecurseIntoSubtypes(Schema schema,
+		protected void UpdateRecurseIntoSubtypes(Schema schema, BsonDocument originalFullRecord,
 			BsonDocument currenOriginalObject, BsonDocument currentOriginalSubdoc,
 			BsonDocument currentNewObject, BsonDocument newSubdoc)
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				string subtypeId = Update(subtype, currentOriginalSubdoc, newSubdoc);
+				// The subtype record id is:
+				string originalSubtypeId = originalFullRecord[subtype.Name + "Id"].ToString();
+				// Returns either the same subtype ID or the same if no changes were made.
+				string newSubtypeId = Update(subtype, currentOriginalSubdoc, newSubdoc, originalSubtypeId);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
-				currentNewObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+				currentNewObject.Add(subtype.Name + "Id", new ObjectId(newSubtypeId));
 
-				// Here we need to get the FK from the original element to be able to compare against the new FK we just set.
+				// Here we need to get the FK from the original super-type element to be able to compare against the new FK we just set.
+				// If this an "abstract" super-type (no concrete elements) how do we find the record?
 			}
 		}
 
