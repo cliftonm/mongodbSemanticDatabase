@@ -82,43 +82,19 @@ namespace Clifton.MongoSemanticDatabase
 			return Insert(schema, doc);
 		}
 
-		protected string Insert(Schema schema, BsonDocument doc)
+		public string Update(Schema schema, JObject jobjOriginal, JObject jobjNew)
 		{
-			string id = null;
+			BsonDocument docOriginal = BsonDocument.Parse(jobjOriginal.ToString());
+			BsonDocument docNew = BsonDocument.Parse(jobjNew.ToString());
 
-			if (schema.IsConcreteType)
-			{
-				int refCount;
+			return Update(schema, docOriginal, docNew);
+		}
 
-				if (IsDuplicate(schema.Name, doc, out id, out refCount))
-				{
-					IncrementRefCount(schema.Name, id, refCount);
-				}
-				else
-				{
-					BsonDocument withRef = AddRef1(doc);
-					id = Insert(schema.Name, withRef);
-				}
-			}
-			else
-			{
-				BsonDocument currentObject = GetConcreteObjects(schema, doc);
-				BsonDocument subjobj = RemoveCurrentConcreteObjects(schema, doc);
-				RecurseIntoSubtypes(schema, currentObject, subjobj);
-				int refCount;
+		public void Delete(Schema schema, JObject jobj)
+		{
+			BsonDocument doc = BsonDocument.Parse(jobj.ToString());
 
-				if (IsDuplicate(schema.Name, currentObject, out id, out refCount))
-				{
-					IncrementRefCount(schema.Name, id, refCount);
-				}
-				else
-				{
-					BsonDocument withRef = AddRef1(currentObject);
-					id = Insert(schema.Name, withRef);
-				}
-			}
-
-			return id;
+			Delete(schema, doc);
 		}
 
 		public List<BsonDocument> Query(Schema schema, string id = null)
@@ -175,6 +151,185 @@ namespace Clifton.MongoSemanticDatabase
 			return docs;
 		}
 
+		protected string Insert(Schema schema, BsonDocument doc)
+		{
+			string id = null;
+
+			if (schema.IsConcreteType)
+			{
+				int refCount;
+
+				if (IsDuplicate(schema.Name, doc, out id, out refCount))
+				{
+					IncrementRefCount(schema.Name, id, refCount);
+				}
+				else
+				{
+					BsonDocument withRef = AddRef1(doc);
+					id = Insert(schema.Name, withRef);
+				}
+			}
+			else
+			{
+				BsonDocument currentObject = GetConcreteObjects(schema, doc);
+				BsonDocument subjobj = RemoveCurrentConcreteObjects(schema, doc);
+				InsertRecurseIntoSubtypes(schema, currentObject, subjobj);
+				int refCount;
+
+				if (IsDuplicate(schema.Name, currentObject, out id, out refCount))
+				{
+					IncrementRefCount(schema.Name, id, refCount);
+				}
+				else
+				{
+					BsonDocument withRef = AddRef1(currentObject);
+					id = Insert(schema.Name, withRef);
+				}
+			}
+
+			return id;
+		}
+
+		/// <summary>
+		/// Deleting a semantic type hierarchy involves checking the _ref count.
+		/// Only records with a _ref count of 1 can be deleted.  We have to drill
+		/// into the lowest type in the hierarchy to determine whether we can 
+		/// delete super-types.
+		/// </summary>
+		protected string Delete(Schema schema, BsonDocument doc)
+		{
+			string id = null;
+
+			if (schema.IsConcreteType)
+			{
+				int refCount = GetRefCount(schema.Name, doc, out id);
+
+				if (refCount == 1)
+				{
+					Delete(schema.Name, id);
+				}
+				else
+				{
+					DecrementRefCount(schema.Name, id, refCount);
+				}
+			}
+			else
+			{
+				BsonDocument currentObject = GetConcreteObjects(schema, doc);
+				BsonDocument subjobj = RemoveCurrentConcreteObjects(schema, doc);
+				DeleteRecurseIntoSubtypes(schema, currentObject, subjobj);
+				int refCount = GetRefCount(schema.Name, currentObject, out id);
+
+				if (refCount == 1)
+				{
+					Delete(schema.Name, id);
+				}
+				else
+				{
+					DecrementRefCount(schema.Name, id, refCount);
+				}
+			}
+
+			return id;
+		}
+
+		/// <summary>
+		/// The complete set of values for the original semantic type must be provided as well as the new values -- we can't actually just update a value based on some primary key.
+		/// If there are no other references to the semantic type, the concrete types can simply be updated.
+		/// If there are other references:
+		///		the reference count for the current type must be decremented
+		///		a new instance of the type must be inserted
+		///		the super-type's "foreign key" reference must be updated
+		///		this process needs to recurse upwards through the hierarchy
+		/// </summary>
+		protected string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew)
+		{
+			string id = null;
+
+			if (schema.IsConcreteType)
+			{
+				int refCount = GetRefCount(schema.Name, docOriginal, out id);
+
+				if (refCount == 1)
+				{
+					Update(schema.Name, id, docOriginal, docNew);
+				}
+				else
+				{
+					DecrementRefCount(schema.Name, id, refCount);
+					id = Insert(schema, docNew);
+				}
+			}
+			else
+			{
+				BsonDocument currentOriginalObject = GetConcreteObjects(schema, docOriginal);
+				BsonDocument subOriginalJobj = RemoveCurrentConcreteObjects(schema, docOriginal);
+				BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+				BsonDocument subNewJobj = RemoveCurrentConcreteObjects(schema, docNew);
+				UpdateRecurseIntoSubtypes(schema, currentOriginalObject, subOriginalJobj, currentNewObject, subNewJobj);
+				int refCount = GetRefCount(schema.Name, currentOriginalObject, out id);
+
+				if (refCount == 1)
+				{
+					Update(schema.Name, id, currentOriginalObject, currentNewObject);
+				}
+				else
+				{
+					DecrementRefCount(schema.Name, id, refCount);
+					id = Insert(schema, docNew);
+				}
+			}
+
+			return id;
+		}
+
+		protected void Update(string collectionName, string id, BsonDocument docOriginal, BsonDocument docNew)
+		{
+			var collection = db.GetCollection<BsonDocument>(collectionName);
+			var filter = new BsonDocument("_id", new ObjectId(id));
+			Dictionary<string, BsonValue> changes = GetChanges(docOriginal, docNew);
+
+			if (changes.Count > 0)
+			{
+				// Get started with the first one.
+				var update = Builders<BsonDocument>.Update.Set(changes.First().Key, changes.First().Value);
+
+				// Do the rest.
+				foreach (KeyValuePair<string, BsonValue> kvp in changes.Skip(1))
+				{
+					update = update.Set(kvp.Key, kvp.Value);
+				}
+
+				collection.UpdateOne(filter, update);
+			}
+		}
+
+		/// <summary>
+		/// Compares to documents, assumed to have elements that do NOT have sub-documents.
+		/// </summary>
+		protected Dictionary<string, BsonValue> GetChanges(BsonDocument originalDoc, BsonDocument newDoc)
+		{
+			Dictionary<string, BsonValue> changes = new Dictionary<string, BsonValue>();
+
+			foreach (BsonElement el in newDoc.Elements)
+			{
+				// Looks like this does a value comparison (not a BsonValue reference comparison), which is good.
+				if ( (originalDoc.Contains(el.Name)) && (originalDoc[el.Name] != el.Value) )
+				{
+					changes[el.Name] = el.Value;
+				}
+			}
+
+			return changes;
+		}
+
+		protected void Delete(string collectionName, string id)
+		{
+			var collection = db.GetCollection<BsonDocument>(collectionName);
+			var filter = new BsonDocument("_id", new ObjectId(id));
+			collection.DeleteOne(filter);
+		}
+
 		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections)
 		{
 			List<string> pipeline = new List<string>();
@@ -222,6 +377,15 @@ namespace Clifton.MongoSemanticDatabase
 			collection.UpdateOne(filter, update);
 		}
 
+		protected void DecrementRefCount(string collectionName, string id, int refCount)
+		{
+			--refCount;
+			var collection = db.GetCollection<BsonDocument>(collectionName);
+			var filter = new BsonDocument("_id", new ObjectId(id));
+			var update = Builders<BsonDocument>.Update.Set("_ref", refCount);
+			collection.UpdateOne(filter, update);
+		}
+
 		protected BsonDocument AddRef1(BsonDocument jobj)
 		{
 			BsonDocument withRef = new BsonDocument(jobj);
@@ -246,6 +410,19 @@ namespace Clifton.MongoSemanticDatabase
 			}
 
 			return exists;
+		}
+
+		protected int GetRefCount(string collectionName, BsonDocument doc, out string id)
+		{
+			id = null;
+			int refCount = 0;
+			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(doc).ToList();
+			// TODO: Assert that docs.Count == 1
+
+			id = docs[0].Elements.Single(el => el.Name == "_id").Value.ToString();
+			refCount = docs[0].Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+
+			return refCount;
 		}
 
 		protected string Insert(string collectionName, BsonDocument doc)
@@ -282,7 +459,7 @@ namespace Clifton.MongoSemanticDatabase
 			return subdoc;
 		}
 
-		protected void RecurseIntoSubtypes(Schema schema, BsonDocument currentObject, BsonDocument subdoc)
+		protected void InsertRecurseIntoSubtypes(Schema schema, BsonDocument currentObject, BsonDocument subdoc)
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
@@ -290,6 +467,32 @@ namespace Clifton.MongoSemanticDatabase
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
 				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+			}
+		}
+
+		protected void DeleteRecurseIntoSubtypes(Schema schema, BsonDocument currentObject, BsonDocument subdoc)
+		{
+			foreach (Schema subtype in schema.Subtypes)
+			{
+				string subtypeId = Delete(subtype, subdoc);
+				// TODO: Assert that the subtype name is unique.
+				// Insert the object ID's referencing the subtypes
+				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+			}
+		}
+
+		protected void UpdateRecurseIntoSubtypes(Schema schema,
+			BsonDocument currenOriginalObject, BsonDocument currentOriginalSubdoc,
+			BsonDocument currentNewObject, BsonDocument newSubdoc)
+		{
+			foreach (Schema subtype in schema.Subtypes)
+			{
+				string subtypeId = Update(subtype, currentOriginalSubdoc, newSubdoc);
+				// TODO: Assert that the subtype name is unique.
+				// Insert the object ID's referencing the subtypes
+				currentNewObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+
+				// Here we need to get the FK from the original element to be able to compare against the new FK we just set.
 			}
 		}
 

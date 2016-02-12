@@ -862,11 +862,205 @@ Assert.IsTrue(json[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot
 
   return pipeline;
 }</pre>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<h3>Delete Tests</h3>
+<h4>Delete Concrete Instance Test</h4>
+<p>Here, we test deleting a concrete instance:</p>
+<pre>[TestMethod]
+public void DeleteSingleInstanceTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetSimpleTestSchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 1, &quot;Collection should be length of 1.&quot;);
+
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 3);
+
+  sd.Delete(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 2);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<p>The implementation for a deletion is very similar to an insert, where we 
+decrement the reference count if greater than 1, otherwise we delete the 
+collection record:</p>
+<pre>protected string Delete(Schema schema, BsonDocument doc)
+{
+  string id = null;
+
+  if (schema.IsConcreteType)
+  {
+    int refCount = GetRefCount(schema.Name, doc, out id);
+
+    if (refCount == 1)
+    {
+      Delete(schema.Name, id);
+    }
+    else
+    {
+      DecrementRefCount(schema.Name, id, refCount);
+    }
+  }
+  else
+  {
+    BsonDocument currentObject = GetConcreteObjects(schema, doc);
+    BsonDocument subjobj = RemoveCurrentConcreteObjects(schema, doc);
+    DeleteRecurseIntoSubtypes(schema, currentObject, subjobj);
+    int refCount = GetRefCount(schema.Name, currentObject, out id);
+
+    if (refCount == 1)
+    {
+      Delete(schema.Name, id);
+    }
+    else
+    {
+      DecrementRefCount(schema.Name, id, refCount);
+    }
+  }
+
+  return id;
+}</pre>
+<p>Since the above was so similar to the insert process, I decided to write the 
+entire implementation first, then the additional tests!</p>
+<h4>Delete Multiple Reference Test</h4>
+<pre>[TestMethod]
+public void DeleteMultipleReferenceTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetSimpleTestSchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 1, &quot;Collection should be length of 1.&quot;);
+
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  // second reference:
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  List&lt;BsonDocument&gt; bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 3);
+
+  // First delete:
+  sd.Delete(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 3);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+
+  // Second delete:
+  sd.Delete(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 2);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>Delete Hierarchy Test</h4>
+<pre>[TestMethod]
+public void DeleteHierarchyTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetTestHierarchySchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; bson;
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  sd.Delete(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 2);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>Delete Multiple Reference Hierarchy Test</h4>
+<pre>[TestMethod]
+public void DeleteMultipleReferenceHierarchyTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetTestHierarchySchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, JObject.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, JObject.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  // Insert a record that re-uses the country name.
+  sd.Insert(schema, JObject.Parse(&quot;{value: 2, name: 'United States'}&quot;));
+
+  List&lt;BsonDocument&gt; bson;
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 4);
+
+  // Delete just the re-use high-level type.
+  sd.Delete(schema, JObject.Parse(&quot;{value: 2, name: 'United States'}&quot;));
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>The Missing Test</h4>
+<p>There is an important test that is missing:</p>
+<pre>// TODO: We should not be able to delete a sub-type if it is referenced by
+// a super-type. We need a master schema to know whether a sub-type has a super-type somewhere,
+// or we need to ask the DB for fields of the form &quot;[subtype]Id&quot;, which would indicate that the
+// subtype is an FK in a supertype.</pre>
+<p>In terms of a &quot;master schema&quot;, since a NoSQL database is schema-less, this 
+isn't necessarily easy to extract from the database itself, however tools like
+<a href="https://github.com/variety/variety">Variety</a>, a schema analyzer, 
+look like a really good start.&nbsp; Of course, to determine the schema, the 
+tool has to actually inspect the <i>records</i> in each collection.&nbsp; 
+Ideally, we should have a separate master schema, but I haven't implemented that 
+at the time of this writing.</p>
+<h3>Update Tests</h3>
+<p>Updates are the most complicated / interesting:</p>
+<ol>
+	<li>The complete set of values for the original semantic type must be 
+	provided as well as the new values -- we can't actually just update a value 
+	based on some primary key.</li>
+	<li>If there are no other references to the semantic type, the concrete 
+	types can simply be updated.</li>
+	<li>If there are other references:<ol>
+		<li>the reference count for the current type must be decremented</li>
+		<li>a new instance of the type must be inserted</li>
+		<li>the super-type's &quot;foreign key&quot; reference must be updated</li>
+		<li>this process needs to recurse upwards through the hierarchy</li>
+	</ol>
+	</li>
+</ol>
+<p>Point #1 is one of the most distinguishing features of a semantic database as 
+compared to a typical relational database.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

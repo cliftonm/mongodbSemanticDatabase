@@ -19,15 +19,7 @@ namespace UnitTests
 		{
 			SemanticDatabase sd = Helpers.CreateCleanDatabase();
 			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
-			Schema schema = Helpers.InstantiateSchema(@"
-			{
-				name: 'countryCodeLookup', 
-				concreteTypes:
-				{
-					value: 'System.Int32',
-					name: 'System.String'
-				}
-			}");
+			Schema schema = Helpers.GetSimpleTestSchema();
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 1, "Collection should be length of 1.");
@@ -44,30 +36,7 @@ namespace UnitTests
 		{
 			SemanticDatabase sd = Helpers.CreateCleanDatabase();
 			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
-			Schema schema = Helpers.InstantiateSchema(@"
-			{
-				name: 'countryCode', 
-				concreteTypes:
-				{
-					value: 'System.Int32',
-				},
-				subtypes: 
-				[
-					{
-						name: 'countryName', 
-						subtypes: 
-						[
-							{
-								name: 'name', 
-								concreteTypes:
-								{
-									name: 'System.String'
-								}
-							}
-						]
-					}
-				]
-			}");
+			Schema schema = Helpers.GetTestHierarchySchema();
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
@@ -75,21 +44,21 @@ namespace UnitTests
 			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
 			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
 
-			List<BsonDocument> json;
+			List<BsonDocument> bson;
 
-			json = sd.Query(schema);
-			Assert.IsTrue(json.Count == 3);
+			bson = sd.Query(schema);
+			Assert.IsTrue(bson.Count == 3);
 
-			Assert.IsTrue(json[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
-			Assert.IsTrue(json[1].ToString().Contains("\"value\" : 20, \"name\" : \"Egypt\""));
-			Assert.IsTrue(json[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
+			Assert.IsTrue(bson[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
+			Assert.IsTrue(bson[1].ToString().Contains("\"value\" : 20, \"name\" : \"Egypt\""));
+			Assert.IsTrue(bson[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
 
-			json = sd.QueryServerSide(schema);
-			Assert.IsTrue(json.Count == 3);
+			bson = sd.QueryServerSide(schema);
+			Assert.IsTrue(bson.Count == 3);
 
-			Assert.IsTrue(json[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
-			Assert.IsTrue(json[1].ToString().Contains("\"value\" : 20, \"name\" : \"Egypt\""));
-			Assert.IsTrue(json[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
+			Assert.IsTrue(bson[0].ToString().Contains("\"value\" : 1, \"name\" : \"United States\""));
+			Assert.IsTrue(bson[1].ToString().Contains("\"value\" : 20, \"name\" : \"Egypt\""));
+			Assert.IsTrue(bson[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
 		}
 	}
 }

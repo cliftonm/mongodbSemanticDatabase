@@ -57,11 +57,13 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="CreateCollectionUnitTests.cs" />
+    <Compile Include="CreateCollectionTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="InsertUnitTests.cs" />
+    <Compile Include="InsertTests.cs" />
     <Compile Include="QueryTests.cs" />
+    <Compile Include="DeleteTests.cs" />
+    <Compile Include="UpdateTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Clifton.MongoSemanticDatabase\Clifton.MongoSemanticDatabase.csproj">

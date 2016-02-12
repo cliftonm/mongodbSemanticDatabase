@@ -10,7 +10,7 @@ using Clifton.MongoSemanticDatabase;
 namespace UnitTests
 {
 	[TestClass]
-	public class SemanticDatabaseUnitTests
+	public class SemanticDatabaseTests
 	{
 		[TestMethod]
 		public void CreateConcreteCollectionTest()

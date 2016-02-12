@@ -25,5 +25,46 @@ namespace UnitTests
 
 			return target;
 		}
+
+		public static Schema GetTestHierarchySchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'countryCode', 
+				concreteTypes:
+				{
+					value: 'System.Int32',
+				},
+				subtypes: 
+				[
+					{
+						name: 'countryName', 
+						subtypes: 
+						[
+							{
+								name: 'name', 
+								concreteTypes:
+								{
+									name: 'System.String'
+								}
+							}
+						]
+					}
+				]
+			}");
+		}
+
+		public static Schema GetSimpleTestSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'countryCodeLookup', 
+				concreteTypes:
+				{
+					value: 'System.Int32',
+					name: 'System.String'
+				}
+			}");
+		}
 	}
 }
