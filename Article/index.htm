@@ -8,13 +8,16 @@
 
 <body>
 
-<h2>Using MongoDB as a Semantic Database</h2>
+<p><img border="0" src="testResults.png" width="369" height="381"></p>
+<h2>Using MongoDB as a Semantic Database - Part I</h2>
 <p>As I've written previously:</p>
 <p>
 <a href="http://www.codeproject.com/Articles/832959/Semantic-Database-Concept-Architecture-and-Impleme">
 Semantic Database: Concept, Architecture and Implementation</a><br>
 <a href="http://www.codeproject.com/Articles/837878/The-Semantic-Database-In-Action">
-The Semantic Database In Action</a></p>
+The Semantic Database In Action</a><br>
+<a href="http://www.codeproject.com/Articles/1077839/Working-with-MongoDBs-lookup-Aggregator">
+Working with MongoDB's $lookup Aggregator</a></p>
 <p>semantic databases are a new kind of database store.&nbsp; Because such a 
 database engine does not yet exist, we have to build it on top of existing 
 engines.&nbsp; In my previous articles, I discussed how a semantic database 
@@ -24,9 +27,25 @@ MongoDB, and illustrate some of the advantages of using a NoSQL database.</p>
 <p>With the advent in December 2015 of MongoDB version 3.2, this became much 
 easier (and realistic) to do, because version 3.2 supports left outer joins with 
 the $lookup aggregator.</p>
+<p>This article covers creating basic CRUD operations in MongoDB for a semantic 
+database.</p>
+<p>Part II will cover a real world example and will undoubtedly <i>uncover</i> 
+implementation flaws in this article.&nbsp; While Part I covers working with the 
+relational hierarchy of a single semantic type, Part II will cover working with 
+the relationships <i>between</i> semantic types.</p>
+<p>Part III will be a surprise!
+<img border="0" src="smiley.png" width="32" height="32"></p>
+<h3>Where's the Code?</h3>
+<p>The code is on GitHub:
+<a href="https://github.com/cliftonm/mongodbSemanticDatabase">
+https://github.com/cliftonm/mongodbSemanticDatabase</a> </p>
+<p>As this is an evolving effort, please download the latest code from there.&nbsp; 
+For example, some of the use of Newtonsoft (particularly <code>JObject</code>) that exists in 
+this article has already been replaces with <code>BsonDocument</code> in the latest 
+implementation and tests.</p>
 <h2>The Foundational Concepts of a Semantic Database</h2>
 <p>Fundamentally, a semantic database captures relationships.&nbsp; There are 
-two primary kinds of relationships:</p>
+two primary kinds of relationships::</p>
 <ol>
 	<li>Static, implicit relationships that define the structure (give meaning) 
 	to a semantic term (a symbol).&nbsp; These are typically expressed with the 
@@ -51,17 +70,16 @@ Programming&nbsp; - the IDE plus More on Agile Project Management</a></p>
 <p>A semantic database actually combines the qualities of semantics and 
 relationality, as we will demonstrate here.</p>
 <h3>An Example of a Static, Implicit Semantic Relationship</h3>
-<p>A person's name is a good example of implicit semantic relationships.&nbsp; 
+<pA person's name is a good example of implicit semantic relationships.&nbsp; 
 People's names (but not in all cultures and of course there are variances even 
 within a culture) consist of a first name and last name.&nbsp; The symbols 
 &quot;first name&quot; and &quot;last name&quot; are themselves specializations of the symbol 
 &quot;name&quot;.&nbsp; Finally, the symbol &quot;name&quot; is a specialization of the symbol (in 
 this data type) &quot;string.&quot;&nbsp; These are all &quot;has a&quot; and &quot;is a kind of&quot; 
 relationships.</p>
-<p>[graphic]</p>
 <h3>Examples of an Explicit Relationship</h3>
 <p>Relationships exist between specialized semantic types, and we can 
-sub-categorize them into static and dynamic relationships.</p>
+sub-categorize them into static and dynamic relationships..</p>
 <h4>Examples of a Static Relationship</h4>
 <p>Fixed relationships are those that never change over time.&nbsp; For example, 
 a person always has a relationship to two other people, &quot;mother&quot; and &quot;father.&quot;&nbsp; 
@@ -87,7 +105,7 @@ the son of Elisabeth&quot;</p>
 Anthroposophist&quot;</p>
 <p>or</p>
 <p>&quot;[X] [Y] [Z]&quot;&nbsp; -- expresses an activity, as in &quot;Marc owns a cat&quot;</p>
-<p>These are all semantically (haha) describing relationships.&nbsp; When we say 
+<pThese are all semantically (haha) describing relationships.&nbsp; When we say 
 something stateful, such as &quot;[X] is a [Y]&quot;, we can convert this to a 
 prepositional phrase to describe the relationship, becoming &quot;[X] is [Z] with 
 [Y]&quot; or similar, though you may have to exercise your imagination a bit.&nbsp; 
@@ -96,7 +114,7 @@ as &quot;Marc is a human with male gender&quot;, or &quot;Marc has the gender ma
 either case, we've done something useful -- we've identified a class of state 
 (gender) that lets us describe explicitly the relationship between Marc and a 
 gender.&nbsp; Enough though with language semantics!</p>
-<h3>Structural Relationship and Symbol Relationship</h3>
+<h3>Structural Relationship and Symbol Relationshipp</h3>
 <p>A semantic database must capture both the hierarchy, the structure, of a 
 symbol as well as the symbol's relationship to other symbols.&nbsp; If, for 
 example, we have two symbols, one for a person's name and another for an 
@@ -141,7 +159,7 @@ SQL database), but that work is really only in the realm of:</p>
 	</ul>
 	</li>
 </ul>
-<h4>Normalized vs. Denormalized Data in a Semantic Database</h4>
+<h4Normalized vs. Denormalized Data in a Semantic Database</h4>
 <p>A NoSQL database easily handles denormalized database--a sub-document within 
 a document.&nbsp; It is of course easy to create a denormalized schema in a SQL 
 database as well, which is the bane of most legacy databases.&nbsp; The golden 
@@ -167,25 +185,25 @@ left join Address a on a.Id = asn.AddressId           -- Address symbol, having 
 <p>This looks horrid (and I'm not sure I even got it right), and it is, but it 
 expresses both the semantic structure and the relationship between two otherwise 
 unrelated symbols:</p>
-<p>[graphic]</p>
+<p><img border="0" src="sql1.png" width="584" height="260"></p>
 <h4>So What's the Point?</h4>
-<p>[key]</p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
 <p>The point is that with a semantic database, relationships that are not 
 explicit between two symbols can still be queried.&nbsp; One can, for example, 
-ask of a semantic database: </p>
+ask of a semantic database:  </p>
 <ul>
 	<li>can I relate a Person and an Address via the person's first name?</li>
-	<li>what are the ways I can relate a Person and an Address other than an 
+	<liwhat are the ways I can relate a Person and an Address other than an 
 	explicit relationship?&nbsp;&nbsp;&nbsp; </li>
 </ul>
 <p>A semantic database can recurse through the semantic structure to discover 
 (and validate) new ways of relating data!&nbsp; A non-semantic database (whether 
 in SQL or NoSQL) simply cannot do that, because there is no discoverable path 
 from &quot;FirstName&quot; to &quot;StreetName&quot;.&nbsp; </p>
-<p>[key]</p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
 <p>A semantic database stand apart from the rest of the database world in its 
 ability to discover new relationships based not on explicitly defined structural 
-or dynamic relationships but on relationships that result in shared semantics.</p>
+or dynamic relationships but on relationships that result in shared semantics..</p>
 <h4>Applications</h4>
 <p>Three applications come to mind immediately:</p>
 <ol>
@@ -219,13 +237,14 @@ always changing:</p>
 incompatible, and limited databases that currently hold our public and 
 not-so-private information.</p>
 <h2>Implementation</h2>
-<p>As stated earlier, in a true semantic database, we could ask these &quot;can I 
+<pAs stated earlier, in a true semantic database, we could ask these &quot;can I 
 relate...&quot; and &quot;give me the intersection of ...&quot; questions and have the 
 server-side do the heavy lifting.&nbsp; But since a true semantic database 
-doesn't exist, we have to do that heavy lifting ourselves.&nbsp; So, here 
-goes...</p>
-<h3>What You'll Need</h3>
-<p>If you've never used MongoDB with C#, you'll need to:</p>
+doesn't exist, we have to do that heavy lifting ourselves.&nbsp; But first, we 
+have to implement the core functionality.&nbsp; Part II will explore the more 
+interesting things we can do with a semantic database.</p>
+<h3>What You'll Needd</h3>
+<pIf you've never used MongoDB with C#, you'll need to:</p>
 <ul>
 	<li><a href="https://www.mongodb.org/downloads#production">Download</a> and 
 	install the MongoDB server</li>
@@ -248,7 +267,7 @@ notice that sometimes the previous tests and usually the implementation are
 frequently refactored.&nbsp; These are the tests, conceptually, that we want to perform (the term &quot;collection&quot; 
 refers here to a NoSQL collection):</p>
 <ol>
-	<li>Creation of a concrete semantic type collection</li>
+	<li>Creation of a concrete semantic type collectionn</li>
 	<li>Creation of a hierarchical semantic type, demonstrating how non-concrete 
 	specializations (sounds like an oxymoron) results in both concrete and 
 	many-to-many relationship collections</li>
@@ -308,7 +327,7 @@ refers here to a NoSQL collection):</p>
 	</li>
 </ul>
 <h3>Creation of a Concrete Semantic Type Collection</h3>
-<p>We'll start with creating some concrete semantic types.&nbsp; A concrete 
+<pWe'll start with creating some concrete semantic types.&nbsp; A concrete 
 semantic type usually describes a single concrete type, so it's pretty basic.&nbsp; 
 There is a always a question with regards to the extreme of creating a concrete 
 type.&nbsp; For example, we can define a phone number:</p>
@@ -356,19 +375,17 @@ back to something general?&quot;&nbsp; For example:</p>
 </ul>
 <p>This gives us a clearly defined way of deciding when to stop the hierarchy of 
 types.</p>
-<p>[aside]</p>
-<p>Rules / Validation</p>
+<h4>Rules / Validation</h4>
 <p>Country codes, area codes, exchanges -- they all have certain rules, so even 
 though they are integers, they have format rules, minimum and maximum length 
 constraints, and so forth.&nbsp; We will eventually (but not in this article) 
 want to associate a concrete type with a collection of rules from a rule table.&nbsp;
 </p>
-<p>[note] </p>
 <p>The more specific we define a semantic type, the more likely it is that we 
 will run into representational conflicts, especially cultural ones.&nbsp; Not 
 all countries comply with the
 <a href="https://en.wikipedia.org/wiki/North_American_Numbering_Plan">North 
-American Numbering Plann</a> -- only 24 apparently do so.</p>
+American Numbering Plan</a> -- only 24 apparently do so.</p>
 <p>Our first semantic types are therefore:</p>
 <ul>
 	<li>countryCode</li>
@@ -380,12 +397,15 @@ American Numbering Plann</a> -- only 24 apparently do so.</p>
 call &quot;value&quot; and furthermore, we note that a concrete semantic type never has 
 more than one value field.&nbsp; If it did, it would be a composite type, and we 
 would want to break this down into its constituent sub-types.&nbsp; So here we 
-have another rule:</p>
-<p><i>a concrete semantic type often has only one value field.</i></p>
+have another rule::</p>
+<p><ia concrete semantic type often has only one value field.</i></p>
 <p>This may at first seem very strange, counter-intuitive, and inefficient, but 
 it allows us to fully express data semantically.&nbsp; Lookup collections 
 (key-value pairs) are one exception to this rule.</p>
-<p>[test icon]</p>
+<p>A second thing that results from a semantic type is that there are often 
+placeholder collections with no concrete values.&nbsp; I call these &quot;abstract&quot; 
+collections, as they contain only references to child collections.</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void CreateConcreteCollection()
 {
@@ -416,9 +436,10 @@ source projects):</p>
   var collection = db.GetCollection&lt;BsonDocument&gt;(collectionName);
   collection.InsertOne(data);
   var result = collection.DeleteOne(new BsonDocument(&quot;_id&quot;, data.Elements.Single(el =&gt; el.Name == &quot;_id&quot;).Value));
-}</pre>
-<h3>Create a Hierarchical Semantic Type</h3>
+}}</pre>
+<h3Create a Hierarchical Semantic Type</h3>
 <p>Here we test creating collections from a hierarchy:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void CreateSpecializedCollection()
 {
@@ -443,16 +464,17 @@ public void CreateSpecializedCollection()
   Assert.IsTrue(collections.Contains(&quot;areaCode&quot;));
   Assert.IsTrue(collections.Contains(&quot;exchange&quot;));
   Assert.IsTrue(collections.Contains(&quot;subscriberId&quot;));
-}</pre>
+}}</pre>
 <p>Again, there's no magic here -- empty collections are created:</p>
 <p><img border="0" src="schema2.png" width="171" height="133"></p>
 <p>Because these are schema-less document collections, there of course are no 
 field definitions.</p>
-<h3>Insert Into a Concrete Semantic Type</h3>
+<h3Insert Into a Concrete Semantic Type</h3>
 <p>Here we test inserting records into a concrete semantic type.&nbsp; The 
 backing implementation is very bare-bones, as we still have to write the more 
 complicated, and interesting, insertion of a semantic hierarchy.&nbsp; But 
 first, the basic test:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void InsertConcreteTypeTest()
 {
@@ -477,7 +499,7 @@ public void InsertConcreteTypeTest()
 
   List&lt;string&gt; json = sd.GetAll(&quot;countryCode&quot;);
 
-  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));
+  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot; }&quot;));;
   Assert.IsTrue(json[1].Contains(&quot;{ \&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot; }&quot;));
   Assert.IsTrue(json[2].Contains(&quot;{ \&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot; }&quot;));
 }</pre>
@@ -498,11 +520,11 @@ something.&nbsp; We humans are all about naming things, Arthur C. Clarke even
 wrote a short story about the human race being created solely for the purpose of 
 listing all the names of God, after which the universe ended -- <u>
 <a href="http://downlode.org/Etext/nine_billion_names_of_god.html">The Nine 
-Billion Names of God</a></u>.&nbsp; Therefore, &quot;name&quot; is a special collection in 
+Billion Names of God</a></u.&nbsp; Therefore, &quot;name&quot; is a special collection in 
 a semantic database, so that entities can be named.</p>
-<p>TODO: Notice that we're still inserting a flattened hierarchy.&nbsp; We'll 
+<p>Notice that we're still inserting a flattened hierarchy.&nbsp; We'll 
 look at resolving duplicate field names and hierarchical inserts later on.</p>
-<p>[test]</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void InsertHierarchyTest()
 {
@@ -547,23 +569,21 @@ public void InsertHierarchyTest()
   Assert.IsTrue(json.Count==3);
 
   json = sd.GetAll(&quot;countryCode&quot;);
-  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1&quot;));
+  Assert.IsTrue(json[0].Contains(&quot;{ \&quot;value\&quot; : 1&quot;));;
   Assert.IsTrue(json[1].Contains(&quot;{ \&quot;value\&quot; : 20&quot;));
-  Assert.IsTrue(json[2].Contains(&quot;{ \&quot;value\&quot; : 30&quot;));
-}</pre>
-<p>[key]</p>
+  Assert.IsTrue(json[2].Contains(&quot;{ \&quot;value\&quot; : 30&quot;));}}</pre>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
 <p>Notice the hierarchy we are creating, and that the middle semantic type, &quot;countryName&quot;, 
 does not have any concrete values.&nbsp; Why do this?&nbsp; Because 
-semantically, it allows us later to query two different things:</p>
+semantically, it allows us to query two different things:</p>
 <ol>
-	<li>Give me all the names of things that have names</li>
-	<li>Give me all the names of countries</li>
+	<li>Give me all the names of things that have names/li>
+	<li>GGive me all the names of countries</li>
 </ol>
-<p>[TODO] We'll illustrate this later.</p>
 <p>Notice how the top level implementation has become a bit more complicated, 
 recursing into the schema structure, removing concrete types as we recurse, and 
 adding reference ID's to parent's JSON object.</p>
-<pre>public string Insert(Schema schema, JObject jobj)
+<pre>public string nsert(Schema schema, JObject jobj)
 {
   string id = null;
 
@@ -577,7 +597,7 @@ adding reference ID's to parent's JSON object.</p>
     JObject subjobj = RemoveCurrentConcreteObjects(schema, jobj);
     RecurseIntoSubtypes(schema, currentObject, subjobj);
     id = Insert(schema.Name, currentObject);
-  }
+  }}
 
   return id;
 }</pre>
@@ -585,7 +605,7 @@ adding reference ID's to parent's JSON object.</p>
 <p>We next delve into some further complexity: in a semantic database, we never 
 duplicate a record, regardless of where it is in the hierarchy.&nbsp; Instead, 
 we increment a reference count.&nbsp; </p>
-<p>[Key]</p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
 <p>In a semantic database, this fully normalizes the value associated with a 
 specific semantic type, such that we are never need to compare the values 
 between two semantic hierarchies because we rely on the normalization the data 
@@ -593,7 +613,7 @@ in the semantic schema to create the &quot;joins&quot; between different semanti
 structures.&nbsp; This works well when the entire schema for a database is well 
 designed but does not prevent us from having to do value comparisons between two 
 databases.</p>
-<p>[Test]</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void InsertDuplicateHierarchyTest()
 {
@@ -699,6 +719,7 @@ insertion and a hierarchy insertion:</p>
 <h3>Concrete Semantic Query Test</h3>
 <p>This <code>Query</code> call for the a concrete semantic type is really nothing more than 
 a call to the <code>GetAll()</code> method, but we test it here anyways.</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestClass]
 public class QueryTests
 {
@@ -731,7 +752,7 @@ public class QueryTests
 <h4>Client-Side</h4>
 <p>This query returns flattened records (so much for a document database!) of a 
 semantic instance at the specified hierarchy.</p>
-<p>[Test]</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void HierarchicalQueryTest()
 {
@@ -821,6 +842,7 @@ would look like this:</p>
 Working with MongoDB's $lookup Aggregator</a> to learn more about how to use 
 <code>$lookup</code> for joining collections.</p>
 <p>We'll extend our test to test server-side as well:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>json = sd.QueryServerSide(schema);
 Assert.IsTrue(json.Count == 3);
 
@@ -865,6 +887,7 @@ Assert.IsTrue(json[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot
 <h3>Delete Tests</h3>
 <h4>Delete Concrete Instance Test</h4>
 <p>Here, we test deleting a concrete instance:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void DeleteSingleInstanceTest()
 {
@@ -932,6 +955,7 @@ collection record:</p>
 <p>Since the above was so similar to the insert process, I decided to write the 
 entire implementation first, then the additional tests!</p>
 <h4>Delete Multiple Reference Test</h4>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void DeleteMultipleReferenceTest()
 {
@@ -972,6 +996,7 @@ public void DeleteMultipleReferenceTest()
   Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
 }</pre>
 <h4>Delete Hierarchy Test</h4>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void DeleteHierarchyTest()
 {
@@ -999,6 +1024,7 @@ public void DeleteHierarchyTest()
   Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
 }</pre>
 <h4>Delete Multiple Reference Hierarchy Test</h4>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
 public void DeleteMultipleReferenceHierarchyTest()
 {
@@ -1057,20 +1083,268 @@ at the time of this writing.</p>
 		<li>the super-type's &quot;foreign key&quot; reference must be updated</li>
 		<li>this process needs to recurse upwards through the hierarchy</li>
 	</ol>
-	</li>
+</li>
 </ol>
 <p>Point #1 is one of the most distinguishing features of a semantic database as 
 compared to a typical relational database.</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<h4>Update a Concrete Semantic Type Test</h4>
+<p>This is the simplest test, where a concrete semantic type (one with no 
+sub-types) is updated:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>[TestMethod]
+public void UpdateConcreteTypeTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetSimpleTestSchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 1, &quot;Collection should be length of 1.&quot;);
+
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 3);
+
+  sd.Update(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;), BsonDocument.Parse(&quot;{value: 1, name: 'United States of America'}&quot;));
+  
+  bson = sd.GetAll(&quot;countryCodeLookup&quot;);
+  Assert.IsTrue(bson.Count == 3);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States of America\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>Update the Bottom of a Semantic Hierarchy Test</h4>
+<p>Here, we do a very similar test as above, except this time we test updating 
+the bottom element of a hierarchy:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>/// &lt;summary&gt;
+/// Test changing a concrete value at the bottom of the hierarcy.
+/// &lt;/summary&gt;
+[TestMethod]
+public void UpdateBottomHierarchySingleReferenceTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetTestHierarchySchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; bson;
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  // This tests updating the bottom of the hierarchy, and since there are no other references, we can update the only instance.
+  sd.Update(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;), BsonDocument.Parse(&quot;{value: 1, name: 'United States of America'}&quot;));
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States of America\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>Update the Top of the Hierarchy Test</h4>
+<p>Here, we test updating a concrete value at top of the semantic type 
+hierarchy:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>/// &lt;summary&gt;
+/// Test changing the country code (the value field), which is at the top of the hierarchy.
+/// &lt;/summary&gt;
+[TestMethod]
+public void UpdateTopHierarchySingleReferenceTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetTestHierarchySchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+
+  List&lt;BsonDocument&gt; bson;
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  // This tests updating the top of the hierachy, changing the country code from 1 to 3.
+  sd.Update(schema, BsonDocument.Parse(&quot;{value: 1}&quot;), BsonDocument.Parse(&quot;{value: 3}&quot;));
+  bson = sd.Query(schema);
+  Assert.IsTrue(bson.Count == 3);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 3, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+}</pre>
+<h4>Update Multiple Reference Test</h4>
+<p>Here, we test updating the bottom of the hierarchy when a concrete value is 
+referenced by two separate semantic instances:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>/// &lt;summary&gt;
+/// Test changing the country name when there are two references to the same country.
+/// &lt;/summary&gt;
+[TestMethod]
+public void UpdateBottomHierarchyMultipleReferenceTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.GetTestHierarchySchema();
+
+  sd.InstantiateSchema(schema);
+  Assert.IsTrue(sd.GetCollections().Count == 3, &quot;Collection should be length of 3.&quot;);
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 1, name: 'United States'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 20, name: 'Egypt'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 30, name: 'Greece'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{value: 40, name: 'United States'}&quot;)); // The country name is in error.
+
+  List&lt;BsonDocument&gt; bson;
+
+  bson = sd.Query(schema);
+  Assert.IsTrue(sd.GetAll(&quot;name&quot;).Count == 3); // &quot;United States&quot; has a ref count of 2
+  Assert.IsTrue(bson.Count == 4);
+
+  // Fix the country name:
+  sd.Update(schema, BsonDocument.Parse(&quot;{value: 40, name: 'United States'}&quot;), BsonDocument.Parse(&quot;{value: 40, name: 'Romania'}&quot;));
+  bson = sd.Query(schema);
+  Assert.IsTrue(sd.GetAll(&quot;name&quot;).Count == 4); // Now we should have four unique country names
+  Assert.IsTrue(bson.Count == 4);
+
+  Assert.IsTrue(bson[0].ToString().Contains(&quot;\&quot;value\&quot; : 1, \&quot;name\&quot; : \&quot;United States\&quot;&quot;));
+  Assert.IsTrue(bson[1].ToString().Contains(&quot;\&quot;value\&quot; : 20, \&quot;name\&quot; : \&quot;Egypt\&quot;&quot;));
+  Assert.IsTrue(bson[2].ToString().Contains(&quot;\&quot;value\&quot; : 30, \&quot;name\&quot; : \&quot;Greece\&quot;&quot;));
+  Assert.IsTrue(bson[3].ToString().Contains(&quot;\&quot;value\&quot; : 40, \&quot;name\&quot; : \&quot;Romania\&quot;&quot;));
+}</pre>
+<h4>Implementation</h4>
+<p>The high level implementation is a recursive process in which we determine 
+whether a record's fields can be updated (there is only one reference) or 
+whether the reference count needs to be decremented and a new instance created, 
+which percolates back up the hierarchy.&nbsp; We also have a special case 
+handler for partial semantic types -- one in which the flattened data does not 
+extend down to the lowest sub-type, as is the case in the &quot;update the top of the 
+hierarchy&quot; test above.&nbsp; Notice the complexity of this operation and the 
+reliance on the _id for each record as we drill into the hierarchy, which is 
+necessary to determine whether, on unwinding from the recursion, a super-type's 
+reference needs to be updated.</p>
+<pre>protected string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew, string schemaId)
+{
+  string id = null;
+
+  if (schema.IsConcreteType)
+  {
+    int refCount = GetRefCount(schema.Name, docOriginal, out id);
+
+    if (refCount == 1)
+    {
+      Update(schema.Name, id, docOriginal, docNew);
+    }
+    else
+    {
+      // We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
+      DecrementRefCount(schema.Name, id, refCount);
+      id = InternalInsert(schema, docNew);
+    }
+  }
+  else
+  {
+    BsonDocument currentOriginalObject = GetConcreteObjects(schema, docOriginal);
+    BsonDocument record = null;
+
+    if (schemaId == null)
+    {
+      // We must use the concrete objects to determine the record.
+      // If there are no concrete objects, we have an error.
+      // There should be a single unique record for the concrete object.
+      if (currentOriginalObject.Elements.Count() == 0)
+      {
+        throw new SemanticDatabaseException(&quot;Cannot update the a semantic type starting with the abstract type &quot; + schema.Name);
+      }
+
+      record = GetRecord(schema.Name, currentOriginalObject);
+
+      if (record == null)
+      {
+        throw new SemanticDatabaseException(&quot;The original record for the semantic type &quot; + schema.Name + &quot; cannot be found.\r\nData: &quot; + currentOriginalObject.ToString());
+      }
+    }
+    else
+    {
+      // We use the subtype id to get the record.
+      record = GetRecord(schema.Name, new BsonDocument(&quot;_id&quot;, new ObjectId(schemaId)));
+
+      if (record == null)
+      {
+        throw new SemanticDatabaseException(&quot;An instance of &quot; + schema.Name + &quot; with _id = &quot; + schemaId + &quot; does not exist!&quot;);
+      }
+    }
+
+    BsonDocument subOriginalJobj = RemoveCurrentConcreteObjects(schema, docOriginal);
+
+    if (subOriginalJobj.Elements.Count() == 0)
+    {
+      // There is nothing further to do, as we're not changing anything further in the hierarchy.
+      // Update the current concrete types.
+      id = record.Elements.Single(el =&gt; el.Name == &quot;_id&quot;).Value.ToString();
+      int refCount = record.Elements.Single(el =&gt; el.Name == &quot;_ref&quot;).Value.ToInt32();
+
+      if (refCount == 1)
+      {
+        BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+        Update(schema.Name, id, record, currentNewObject);
+      }
+      else
+      {
+        // TODO: THIS CODE PATH IS NOT TESTED!
+        // Now we have a problem -- something else is referencing this record other than our current hierarch, 
+        // but we don't know what. But we're updating this particular type instance. 
+        // Do all the super-types reflect this change in the subtype? We'll assume no.
+        // Only this hierarchy gets updated.
+        DecrementRefCount(schema.Name, id, refCount);
+        id = InternalInsert(schema, docNew);
+
+        // Otherwise:
+        // All supertypes referencing this hierarchy get updated.
+        //BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+        //Update(schema.Name, id, record, currentNewObject);
+      }
+    }
+    else
+    {
+      BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
+      BsonDocument subNewJobj = RemoveCurrentConcreteObjects(schema, docNew);
+      UpdateRecurseIntoSubtypes(schema, record, currentOriginalObject, subOriginalJobj, currentNewObject, subNewJobj);
+      id = record.Elements.Single(el =&gt; el.Name == &quot;_id&quot;).Value.ToString();
+      int refCount = record.Elements.Single(el =&gt; el.Name == &quot;_ref&quot;).Value.ToInt32();
+
+      if (refCount == 1)
+      {
+        Update(schema.Name, id, record, currentNewObject);
+      }
+      else
+      {
+        // We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
+        DecrementRefCount(schema.Name, id, refCount);
+        id = InternalInsert(schema, docNew);
+      }
+    }
+  }
+
+  return id;
+}</pre>
+<h2>Conclusion</h2>
+<p>So far so good -- although there are some TODO's and gaps in the path 
+testing, this is sufficient to move forward with Part II.&nbsp; I realize the 
+ideas presented here are probably crazy, and this article is somewhat boring 
+because it's basically just unit tests.&nbsp; However, things should get a bit 
+more exciting in Part II, and certainly in Part III!</p>
 
 </body>
 

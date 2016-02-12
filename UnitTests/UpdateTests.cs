@@ -106,7 +106,9 @@ namespace UnitTests
 			Assert.IsTrue(bson[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
 		}
 
-		// Test changing the country name when there are two references to the same country.
+		/// <summary>
+		/// Test changing the country name when there are two references to the same country.
+		/// </summary>
 		[TestMethod]
 		public void UpdateBottomHierarchyMultipleReferenceTest()
 		{
