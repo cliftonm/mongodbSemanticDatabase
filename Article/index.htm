@@ -9,7 +9,7 @@
 <body>
 
 <p><img border="0" src="testResults.png" width="369" height="381"></p>
-<h2>Using MongoDB as a Semantic Database - Part I</h2>
+<h2>Using MongoDB to Implement a Semantic Database - Part I</h2>
 <p>As I've written previously:</p>
 <p>
 <a href="http://www.codeproject.com/Articles/832959/Semantic-Database-Concept-Architecture-and-Impleme">
@@ -70,7 +70,7 @@ Programming&nbsp; - the IDE plus More on Agile Project Management</a></p>
 <p>A semantic database actually combines the qualities of semantics and 
 relationality, as we will demonstrate here.</p>
 <h3>An Example of a Static, Implicit Semantic Relationship</h3>
-<pA person's name is a good example of implicit semantic relationships.&nbsp; 
+<p>A person's name is a good example of implicit semantic relationships.&nbsp; 
 People's names (but not in all cultures and of course there are variances even 
 within a culture) consist of a first name and last name.&nbsp; The symbols 
 &quot;first name&quot; and &quot;last name&quot; are themselves specializations of the symbol 
@@ -105,7 +105,7 @@ the son of Elisabeth&quot;</p>
 Anthroposophist&quot;</p>
 <p>or</p>
 <p>&quot;[X] [Y] [Z]&quot;&nbsp; -- expresses an activity, as in &quot;Marc owns a cat&quot;</p>
-<pThese are all semantically (haha) describing relationships.&nbsp; When we say 
+<p>These are all semantically (haha) describing relationships.&nbsp; When we say 
 something stateful, such as &quot;[X] is a [Y]&quot;, we can convert this to a 
 prepositional phrase to describe the relationship, becoming &quot;[X] is [Z] with 
 [Y]&quot; or similar, though you may have to exercise your imagination a bit.&nbsp; 
@@ -114,7 +114,7 @@ as &quot;Marc is a human with male gender&quot;, or &quot;Marc has the gender ma
 either case, we've done something useful -- we've identified a class of state 
 (gender) that lets us describe explicitly the relationship between Marc and a 
 gender.&nbsp; Enough though with language semantics!</p>
-<h3>Structural Relationship and Symbol Relationshipp</h3>
+<h3>Structural Relationship and Symbol Relationship</h3>
 <p>A semantic database must capture both the hierarchy, the structure, of a 
 symbol as well as the symbol's relationship to other symbols.&nbsp; If, for 
 example, we have two symbols, one for a person's name and another for an 
@@ -159,7 +159,7 @@ SQL database), but that work is really only in the realm of:</p>
 	</ul>
 	</li>
 </ul>
-<h4Normalized vs. Denormalized Data in a Semantic Database</h4>
+<h4>Normalized vs. Denormalized Data in a Semantic Database</h4>
 <p>A NoSQL database easily handles denormalized database--a sub-document within 
 a document.&nbsp; It is of course easy to create a denormalized schema in a SQL 
 database as well, which is the bane of most legacy databases.&nbsp; The golden 
@@ -193,7 +193,7 @@ explicit between two symbols can still be queried.&nbsp; One can, for example,
 ask of a semantic database:  </p>
 <ul>
 	<li>can I relate a Person and an Address via the person's first name?</li>
-	<liwhat are the ways I can relate a Person and an Address other than an 
+	<li>what are the ways I can relate a Person and an Address other than an 
 	explicit relationship?&nbsp;&nbsp;&nbsp; </li>
 </ul>
 <p>A semantic database can recurse through the semantic structure to discover 
@@ -237,14 +237,14 @@ always changing:</p>
 incompatible, and limited databases that currently hold our public and 
 not-so-private information.</p>
 <h2>Implementation</h2>
-<pAs stated earlier, in a true semantic database, we could ask these &quot;can I 
+<p>As stated earlier, in a true semantic database, we could ask these &quot;can I 
 relate...&quot; and &quot;give me the intersection of ...&quot; questions and have the 
 server-side do the heavy lifting.&nbsp; But since a true semantic database 
 doesn't exist, we have to do that heavy lifting ourselves.&nbsp; But first, we 
 have to implement the core functionality.&nbsp; Part II will explore the more 
 interesting things we can do with a semantic database.</p>
 <h3>What You'll Needd</h3>
-<pIf you've never used MongoDB with C#, you'll need to:</p>
+<p>If you've never used MongoDB with C#, you'll need to:</p>
 <ul>
 	<li><a href="https://www.mongodb.org/downloads#production">Download</a> and 
 	install the MongoDB server</li>
@@ -327,7 +327,7 @@ refers here to a NoSQL collection):</p>
 	</li>
 </ul>
 <h3>Creation of a Concrete Semantic Type Collection</h3>
-<pWe'll start with creating some concrete semantic types.&nbsp; A concrete 
+<p>We'll start with creating some concrete semantic types.&nbsp; A concrete 
 semantic type usually describes a single concrete type, so it's pretty basic.&nbsp; 
 There is a always a question with regards to the extreme of creating a concrete 
 type.&nbsp; For example, we can define a phone number:</p>
@@ -397,8 +397,8 @@ American Numbering Plan</a> -- only 24 apparently do so.</p>
 call &quot;value&quot; and furthermore, we note that a concrete semantic type never has 
 more than one value field.&nbsp; If it did, it would be a composite type, and we 
 would want to break this down into its constituent sub-types.&nbsp; So here we 
-have another rule::</p>
-<p><ia concrete semantic type often has only one value field.</i></p>
+have another rule:</p>
+<p><i>a concrete semantic type often has only one value field.</i></p>
 <p>This may at first seem very strange, counter-intuitive, and inefficient, but 
 it allows us to fully express data semantically.&nbsp; Lookup collections 
 (key-value pairs) are one exception to this rule.</p>
@@ -437,7 +437,7 @@ source projects):</p>
   collection.InsertOne(data);
   var result = collection.DeleteOne(new BsonDocument(&quot;_id&quot;, data.Elements.Single(el =&gt; el.Name == &quot;_id&quot;).Value));
 }}</pre>
-<h3Create a Hierarchical Semantic Type</h3>
+<h3>Create a Hierarchical Semantic Type</h3>
 <p>Here we test creating collections from a hierarchy:</p>
 <p><img border="0" src="unittest.png" width="14" height="32"></p>
 <pre>[TestMethod]
@@ -469,7 +469,7 @@ public void CreateSpecializedCollection()
 <p><img border="0" src="schema2.png" width="171" height="133"></p>
 <p>Because these are schema-less document collections, there of course are no 
 field definitions.</p>
-<h3Insert Into a Concrete Semantic Type</h3>
+<h3>Insert Into a Concrete Semantic Type</h3>
 <p>Here we test inserting records into a concrete semantic type.&nbsp; The 
 backing implementation is very bare-bones, as we still have to write the more 
 complicated, and interesting, insertion of a semantic hierarchy.&nbsp; But 
@@ -520,7 +520,7 @@ something.&nbsp; We humans are all about naming things, Arthur C. Clarke even
 wrote a short story about the human race being created solely for the purpose of 
 listing all the names of God, after which the universe ended -- <u>
 <a href="http://downlode.org/Etext/nine_billion_names_of_god.html">The Nine 
-Billion Names of God</a></u.&nbsp; Therefore, &quot;name&quot; is a special collection in 
+Billion Names of God</a></u>.&nbsp; Therefore, &quot;name&quot; is a special collection in 
 a semantic database, so that entities can be named.</p>
 <p>Notice that we're still inserting a flattened hierarchy.&nbsp; We'll 
 look at resolving duplicate field names and hierarchical inserts later on.</p>
