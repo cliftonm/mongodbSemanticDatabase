@@ -4,9 +4,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using MongoDB.Bson;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 using Clifton.MongoSemanticDatabase;
 
 namespace UnitTests
@@ -30,14 +27,14 @@ namespace UnitTests
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 1, "Collection should be length of 1.");
 
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
-			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
-			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 30, name: 'Greece'}"));
 
 			List<BsonDocument> bson = sd.GetAll("countryCodeLookup");
 			Assert.IsTrue(bson.Count == 3);
 
-			sd.Update(schema, JObject.Parse("{value: 1, name: 'United States'}"), JObject.Parse("{value: 1, name: 'United States of America'}"));
+			sd.Update(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"), BsonDocument.Parse("{value: 1, name: 'United States of America'}"));
 
 			bson = sd.GetAll("countryCodeLookup");
 			Assert.IsTrue(bson.Count == 3);
@@ -59,9 +56,9 @@ namespace UnitTests
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
-			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
-			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 30, name: 'Greece'}"));
 
 			List<BsonDocument> bson;
 
@@ -69,7 +66,7 @@ namespace UnitTests
 			Assert.IsTrue(bson.Count == 3);
 
 			// This tests updating the bottom of the hierarchy, and since there are no other references, we can update the only instance.
-			sd.Update(schema, JObject.Parse("{value: 1, name: 'United States'}"), JObject.Parse("{value: 1, name: 'United States of America'}"));
+			sd.Update(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"), BsonDocument.Parse("{value: 1, name: 'United States of America'}"));
 			bson = sd.Query(schema);
 			Assert.IsTrue(bson.Count == 3);
 
@@ -90,9 +87,9 @@ namespace UnitTests
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
-			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
-			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 30, name: 'Greece'}"));
 
 			List<BsonDocument> bson;
 
@@ -100,7 +97,7 @@ namespace UnitTests
 			Assert.IsTrue(bson.Count == 3);
 
 			// This tests updating the top of the hierachy, changing the country code from 1 to 3.
-			sd.Update(schema, JObject.Parse("{value: 1}"), JObject.Parse("{value: 3}"));
+			sd.Update(schema, BsonDocument.Parse("{value: 1}"), BsonDocument.Parse("{value: 3}"));
 			bson = sd.Query(schema);
 			Assert.IsTrue(bson.Count == 3);
 
@@ -119,10 +116,10 @@ namespace UnitTests
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
-			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
-			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
-			sd.Insert(schema, JObject.Parse("{value: 40, name: 'United States'}"));		// The country name is in error.
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 30, name: 'Greece'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 40, name: 'United States'}"));		// The country name is in error.
 
 			List<BsonDocument> bson;
 
@@ -131,7 +128,7 @@ namespace UnitTests
 			Assert.IsTrue(bson.Count == 4);
 
 			// Fix the country name:
-			sd.Update(schema, JObject.Parse("{value: 40, name: 'United States'}"), JObject.Parse("{value: 40, name: 'Romania'}"));
+			sd.Update(schema, BsonDocument.Parse("{value: 40, name: 'United States'}"), BsonDocument.Parse("{value: 40, name: 'Romania'}"));
 			bson = sd.Query(schema);
 			Assert.IsTrue(sd.GetAll("name").Count == 4);		// Now we should have four unique country names
 			Assert.IsTrue(bson.Count == 4);

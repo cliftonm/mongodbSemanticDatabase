@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 using Clifton.MongoSemanticDatabase;
 
 namespace UnitTests

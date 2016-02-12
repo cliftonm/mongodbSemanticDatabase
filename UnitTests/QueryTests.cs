@@ -4,9 +4,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using MongoDB.Bson;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 using Clifton.MongoSemanticDatabase;
 
 namespace UnitTests
@@ -24,7 +21,7 @@ namespace UnitTests
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 1, "Collection should be length of 1.");
 
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
 			List<BsonDocument> records = sd.Query(schema);
 
 			Assert.IsTrue(records.Count == 1);
@@ -40,9 +37,9 @@ namespace UnitTests
 
 			sd.InstantiateSchema(schema);
 			Assert.IsTrue(sd.GetCollections().Count == 3, "Collection should be length of 3.");
-			sd.Insert(schema, JObject.Parse("{value: 1, name: 'United States'}"));
-			sd.Insert(schema, JObject.Parse("{value: 20, name: 'Egypt'}"));
-			sd.Insert(schema, JObject.Parse("{value: 30, name: 'Greece'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 1, name: 'United States'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 20, name: 'Egypt'}"));
+			sd.Insert(schema, BsonDocument.Parse("{value: 30, name: 'Greece'}"));
 
 			List<BsonDocument> bson;
 

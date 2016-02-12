@@ -39,8 +39,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\installations\MongoDB\CSharpDriver-2.2.0\MongoDB.Bson.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\Lib\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\MongoDbTests\Lib\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>

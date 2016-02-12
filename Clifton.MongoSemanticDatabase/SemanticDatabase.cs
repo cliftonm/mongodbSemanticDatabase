@@ -6,9 +6,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 using Clifton.Core.ExtensionMethods;
 
 namespace Clifton.MongoSemanticDatabase
@@ -23,21 +20,34 @@ namespace Clifton.MongoSemanticDatabase
 		protected IMongoClient client;
 		protected IMongoDatabase db;
 
+		/// <summary>
+		/// Constructor initializes the MongoDB client.
+		/// </summary>
 		public SemanticDatabase()
 		{
 			client = new MongoClient();
 		}
 
+		/// <summary>
+		/// Remove a database.
+		/// </summary>
 		public void DropDatabase(string dbName)
 		{
 			client.DropDatabase(dbName);
 		}
 
+		/// <summary>
+		/// Opens an existing or new database.
+		/// </summary>
 		public void Open(string dbName)
 		{
 			db = client.GetDatabase(dbName);
 		}
 
+		/// <summary>
+		/// Creates a collection.  Collections will also be auto-created by MongoDB on their first use, so calling this
+		/// method really is never necessary.
+		/// </summary>
 		public void CreateCollection(string collectionName)
 		{
 			// This throws a NullReferenceException!
@@ -56,6 +66,9 @@ namespace Clifton.MongoSemanticDatabase
 			var result = collection.DeleteOne(new BsonDocument("_id", data.Elements.Single(el => el.Name == "_id").Value));
 		}
 
+		/// <summary>
+		/// Return the names of all collections in the database.
+		/// </summary>
 		public List<string> GetCollections()
 		{
 			List<string> items = db.ListCollections().ToList().Select(doc => doc.Elements.Single(el => el.Name == "name").Value.AsString).ToList();
@@ -63,6 +76,9 @@ namespace Clifton.MongoSemanticDatabase
 			return items;
 		}
 
+		/// <summary>
+		/// Creates the collections for the specified schema.
+		/// </summary>
 		public void InstantiateSchema(Schema typeDef)
 		{
 			if (typeDef.IsConcreteType)
@@ -80,26 +96,19 @@ namespace Clifton.MongoSemanticDatabase
 			}
 		}
 
-		public string Insert(Schema schema, JObject jobj)
+		public string Insert(Schema schema, BsonDocument doc)
 		{
-			BsonDocument doc = BsonDocument.Parse(jobj.ToString());
-
-			return Insert(schema, doc);
+			return InternalInsert(schema, doc);
 		}
 
-		public string Update(Schema schema, JObject jobjOriginal, JObject jobjNew)
+		public string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew)
 		{
-			BsonDocument docOriginal = BsonDocument.Parse(jobjOriginal.ToString());
-			BsonDocument docNew = BsonDocument.Parse(jobjNew.ToString());
-
 			return Update(schema, docOriginal, docNew, null);
 		}
 
-		public void Delete(Schema schema, JObject jobj)
+		public void Delete(Schema schema, BsonDocument doc)
 		{
-			BsonDocument doc = BsonDocument.Parse(jobj.ToString());
-
-			Delete(schema, doc);
+			InternalDelete(schema, doc);
 		}
 
 		public List<BsonDocument> Query(Schema schema, string id = null)
@@ -156,7 +165,7 @@ namespace Clifton.MongoSemanticDatabase
 			return docs;
 		}
 
-		protected string Insert(Schema schema, BsonDocument doc)
+		protected string InternalInsert(Schema schema, BsonDocument doc)
 		{
 			string id = null;
 
@@ -201,7 +210,7 @@ namespace Clifton.MongoSemanticDatabase
 		/// into the lowest type in the hierarchy to determine whether we can 
 		/// delete super-types.
 		/// </summary>
-		protected string Delete(Schema schema, BsonDocument doc)
+		protected string InternalDelete(Schema schema, BsonDocument doc)
 		{
 			string id = null;
 
@@ -263,7 +272,7 @@ namespace Clifton.MongoSemanticDatabase
 				{
 					// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
 					DecrementRefCount(schema.Name, id, refCount);
-					id = Insert(schema, docNew);
+					id = InternalInsert(schema, docNew);
 				}
 			}
 			else
@@ -321,7 +330,7 @@ namespace Clifton.MongoSemanticDatabase
 						// Do all the super-types reflect this change in the subtype?  We'll assume no.
 						// Only this hierarchy gets updated.
 						DecrementRefCount(schema.Name, id, refCount);
-						id = Insert(schema, docNew);
+						id = InternalInsert(schema, docNew);
 
 						// Otherwise:
 						// All supertypes referencing this hierarchy get updated.
@@ -346,7 +355,7 @@ namespace Clifton.MongoSemanticDatabase
 					{
 						// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
 						DecrementRefCount(schema.Name, id, refCount);
-						id = Insert(schema, docNew);
+						id = InternalInsert(schema, docNew);
 					}
 				}
 			}
@@ -552,7 +561,7 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				string subtypeId = Insert(subtype, subdoc);
+				string subtypeId = InternalInsert(subtype, subdoc);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
 				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
@@ -563,7 +572,7 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				string subtypeId = Delete(subtype, subdoc);
+				string subtypeId = InternalDelete(subtype, subdoc);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
 				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
