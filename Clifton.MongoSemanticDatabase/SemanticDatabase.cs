@@ -72,6 +72,8 @@ namespace Clifton.MongoSemanticDatabase
 		public List<string> GetCollections()
 		{
 			List<string> items = db.ListCollections().ToList().Select(doc => doc.Elements.Single(el => el.Name == "name").Value.AsString).ToList();
+			// For some reason, this collection appeared on my Gateway laptop!
+			items.Remove("system.indexes");
 
 			return items;
 		}
