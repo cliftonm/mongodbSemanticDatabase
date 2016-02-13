@@ -66,5 +66,154 @@ namespace UnitTests
 				}
 			}");
 		}
+
+		public static Schema CreatePersonSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'person', 
+				subtypes:
+				[
+					{
+						name: 'personName',
+						subtypes:
+						[
+							{
+								name: 'firstName',
+								subtypes:
+								[
+									{
+									name: 'name',
+									concreteTypes:
+									{
+										name: 'System.String'
+									}
+								]
+							},
+							{
+								name: 'lastName',
+								subtypes:
+								[
+									{
+									name: 'name',
+									concreteTypes:
+									{
+										name: 'System.String'
+									}
+								]
+							},
+						]
+					}
+				]
+			}");
+		}
+
+		public static Schema CreatePhoneNumberSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'phoneNumber', 
+				subtypes:
+				[
+					{
+						name: 'areaCode',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'exchange',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'subscriberId',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					}
+				]
+			}");
+		}
+
+		public static Schema CreateAddressSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'address', 
+				subtypes:
+				[
+					{
+						name: 'streetPrefix',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'streetName',
+						subtypes:
+						[
+							{
+							name: 'name',
+							concreteTypes:
+							{
+								name: 'System.String'
+							}
+						]
+					},
+					{
+						name: 'streetPostfix',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'boxNumber',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'city',
+						concreteTypes:
+						{
+							value: 'System.String'
+						}
+					},
+					{
+						name: 'state',
+						concreteTypes:
+						{
+							abbr: 'System.String'
+						},
+						subtypes:
+						[
+							{
+							name: 'name',
+							concreteTypes:
+							{
+								name: 'System.String'
+							}
+						]
+					},
+					{
+						name: 'zipCode',
+						concreteTypes:
+						{
+							zip: 'System.String'
+							zip4: 'System.String'
+						}
+					},
+				]
+			}");
+		}
+
 	}
 }
