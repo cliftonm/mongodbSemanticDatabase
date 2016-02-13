@@ -35,7 +35,7 @@ Date:</p>
                 name: 'name',
                 concreteTypes:
                 [
-                  {name: 'name', type: 'System.String'}
+                  {name: 'name', alias: 'monthName', type: 'System.String'}
                 ]
               }
             ]
@@ -153,9 +153,105 @@ public void InsertOnlyMonthTest()
   List&lt;string&gt; collections = sd.GetCollections();
   Assert.IsTrue(collections.Count == 6);
 
-  sd.Insert(schema, BsonDocument.Parse(&quot;{day: 8, month: 'August'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 8, monthName: 'August'}&quot;));
 }
 </pre>
+<p>Inspecting the aggregate query:</p>
+<pre>db.date.aggregate(
+{$lookup: {from: 'month', localField:'monthId', foreignField: '_id', as: 'month'} },
+{$unwind: '$month'},
+{$lookup: {from: 'monthName', localField:'month.monthNameId', foreignField: '_id', as: 'monthName'} },
+{$unwind: '$monthName'},
+{$lookup: {from: 'name', localField:'monthName.nameId', foreignField: '_id', as: 'name'} },
+{$unwind: '$name'}
+)</pre>
+<p>We get the desired graph:</p>
+<p><img border="0" src="date1.png" width="624" height="355"></p>
+<p>We can then assert that our client-side graph returns the aliased &quot;view&quot;:</p>
+<pre>sd.Insert(schema, BsonDocument.Parse(&quot;{month: 8, monthName: 'August'}&quot;));
+
+List&lt;BsonDocument&gt; docs = sd.Query(schema);
+Assert.IsTrue(docs.Count == 1);
+Assert.IsTrue(docs[0].ToString()==&quot;{ \&quot;month\&quot; : 8, \&quot;monthName\&quot; : \&quot;August\&quot; }&quot;);</pre>
+<p>Unfortunately, because this is a partial instance and our schema expects a 
+full instance of the type definition, our server-side-query fails when it tries 
+to do a left outer join on &quot;day&quot;, which is empty.&nbsp; Here's where we are 
+before the unwind of &quot;day&quot;:</p>
+<pre>db.date.aggregate(
+{$lookup: {from: 'month', localField:'monthId', foreignField: '_id', as: 'month'} },
+{$unwind: '$month'},
+{$lookup: {from: 'monthName', localField:'month.monthNameId', foreignField: '_id', as: 'monthName'} },
+{$unwind: '$monthName'},
+{$lookup: {from: 'name', localField:'monthName.nameId', foreignField: '_id', as: 'name'} },
+{$unwind: '$name'},
+{$lookup: {from: 'day', localField:'dayId', foreignField: '_id', as: 'day'} }
+)</pre>
+<p><img border="0" src="serversidequery1.png" width="578" height="185"></p>
+<p>And if we now add the unwind for &quot;day&quot;:</p>
+<pre>db.date.aggregate(
+{$lookup: {from: 'month', localField:'monthId', foreignField: '_id', as: 'month'} },
+{$unwind: '$month'},
+{$lookup: {from: 'monthName', localField:'month.monthNameId', foreignField: '_id', as: 'monthName'} },
+{$unwind: '$monthName'},
+{$lookup: {from: 'name', localField:'monthName.nameId', foreignField: '_id', as: 'name'} },
+{$unwind: '$name'},
+{$lookup: {from: 'day', localField:'dayId', foreignField: '_id', as: 'day'} },
+{$unwind: '$day'}
+)</pre>
+<p>we get 0 records returned!</p>
+<p>Sadly, we cannot add a conditional at this point.&nbsp; This fails:</p>
+<pre>db.date.aggregate(
+{$lookup: {from: 'month', localField:'monthId', foreignField: '_id', as: 'month'} },
+{$unwind: '$month'},
+{$lookup: {from: 'monthName', localField:'month.monthNameId', foreignField: '_id', as: 'monthName'} },
+{$unwind: '$monthName'},
+{$lookup: {from: 'name', localField:'monthName.nameId', foreignField: '_id', as: 'name'} },
+{$unwind: '$name'},
+{$lookup: {from: 'day', localField:'dayId', foreignField: '_id', as: 'day'} },
+{$unwind: '$day'},
+{$cond: [ {$eq: [{$size: '$day'}, 0]}, {$unwind: '$day'}, {value:0} ] }
+)</pre>
+<p>with:</p>
+<p><img border="0" src="fail1.png" width="645" height="189"></p>
+<p>So we add a piece to our test that verifies that our server-side query of a 
+partial instance fails:</p>
+<pre>docs = sd.QueryServerSide(schema);
+Assert.IsTrue(docs.Count == 0, &quot;Partial semantic instance expected to fail with $lookup aggregator.&quot;);</pre>
+<p>I haven't been able to figure out a workaround to this issue.</p>
+<p>If we insert the full structure that matches the schema:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>[TestMethod]
+public void InsertFullDateTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema schema = Helpers.CreateDateSchema();
+  sd.InstantiateSchema(schema);
+  List&lt;string&gt; collections = sd.GetCollections();
+  Assert.IsTrue(collections.Count == 6);
+
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 8, monthName: 'August', day: 19, year: 1962}&quot;));
+
+  List&lt;BsonDocument&gt; docs = sd.Query(schema);
+  Assert.IsTrue(docs.Count == 1);
+  Assert.IsTrue(docs[0].ToString() == &quot;{ \&quot;month\&quot; : 8, \&quot;monthName\&quot; : \&quot;August\&quot;, \&quot;day\&quot; : 19, \&quot;year\&quot; : 1962 }&quot;);
+
+  docs = sd.QueryServerSide(schema);
+  Assert.IsTrue(docs.Count == 1);
+  Assert.IsTrue(docs[0].ToString() == &quot;{ \&quot;month\&quot; : 8, \&quot;monthName\&quot; : \&quot;August\&quot;, \&quot;day\&quot; : 19, \&quot;year\&quot; : 1962 }&quot;);
+}</pre>
+<p>We get the expected result -- note the aliased field names are returned.</p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
+<p>Semantic relationships are not necessarily intuitive:</p>
+<ul>
+	<li>The suggests that what we insert should match our schema -- we shouldn't 
+	be providing partial data against our schema.</li>
+	<li>The month name is really a separate collection that we should <i>
+	dynamically</i> associate with, rather than the embedded lookup that we've 
+	coded here.</li>
+</ul>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

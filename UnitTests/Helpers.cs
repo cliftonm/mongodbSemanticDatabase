@@ -90,7 +90,7 @@ namespace UnitTests
 										name: 'name',
 										concreteTypes:
 										[
-											{name: 'name', type: 'System.String'}
+											{name: 'name', alias: 'monthName', type: 'System.String'}
 										]
 									}
 								]

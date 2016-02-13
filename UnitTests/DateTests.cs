@@ -38,7 +38,35 @@ namespace UnitTests
 			List<string> collections = sd.GetCollections();
 			Assert.IsTrue(collections.Count == 6);
 
-			sd.Insert(schema, BsonDocument.Parse("{day: 8, month: 'August'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 8, monthName: 'August'}"));
+
+			List<BsonDocument> docs = sd.Query(schema);
+			Assert.IsTrue(docs.Count == 1);
+			Assert.IsTrue(docs[0].ToString()=="{ \"month\" : 8, \"monthName\" : \"August\" }");
+
+			docs = sd.QueryServerSide(schema);
+			Assert.IsTrue(docs.Count == 0, "Partial semantic instance expected to fail when the $unwind aggregator encounters an empty array.");
+		}
+
+		[TestMethod]
+		public void InsertFullDateTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema schema = Helpers.CreateDateSchema();
+			sd.InstantiateSchema(schema);
+			List<string> collections = sd.GetCollections();
+			Assert.IsTrue(collections.Count == 6);
+
+			sd.Insert(schema, BsonDocument.Parse("{month: 8, monthName: 'August', day: 19, year: 1962}"));
+
+			List<BsonDocument> docs = sd.Query(schema);
+			Assert.IsTrue(docs.Count == 1);
+			Assert.IsTrue(docs[0].ToString() == "{ \"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962 }");
+
+			docs = sd.QueryServerSide(schema);
+			Assert.IsTrue(docs.Count == 1);
+			Assert.IsTrue(docs[0].ToString() == "{ \"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962 }");
 		}
 	}
 }

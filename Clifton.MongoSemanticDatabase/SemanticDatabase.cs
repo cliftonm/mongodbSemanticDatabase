@@ -127,14 +127,29 @@ namespace Clifton.MongoSemanticDatabase
 				{
 					string childIdName = subtype.Name + "Id";
 					// Remove the FK ID, as we don't want it in the final recordset
-					string childId = record[childIdName].ToString();
-					record.Remove(childIdName);
-					List<BsonDocument> childRecords = Query(subtype, childId);
 
-					// TODO: Assert that childRecords <= 1, and we know only one child record exists because we don't allow duplicates.
-					if (childRecords.Count == 1)
+					// A semantic instance may be a partial graph.
+					if (record.Contains(childIdName))
 					{
-						childRecords[0].Elements.ForEach(p => record.Add(p.Name, childRecords[0][p.Name]));
+						string childId = record[childIdName].ToString();
+						record.Remove(childIdName);
+						List<BsonDocument> childRecords = Query(subtype, childId);
+
+						// TODO: Assert that childRecords <= 1, and we know only one child record exists because we don't allow duplicates.
+						if (childRecords.Count == 1)
+						{
+							childRecords[0].Elements.ForEach(p =>
+								{
+									if (subtype.ConcreteTypes.Exists(ct => ct.Name == p.Name))
+									{
+										record.Add(subtype.GetAlias(p.Name), childRecords[0][p.Name]);
+									}
+									else
+									{
+										record.Add(p.Name, childRecords[0][p.Name]);
+									}
+								});
+						}
 					}
 				}
 			}
@@ -182,8 +197,17 @@ namespace Clifton.MongoSemanticDatabase
 				else
 				{
 					BsonDocument currentObject = GetConcreteObjects(schema, doc);
-					BsonDocument withRef = AddRef1(currentObject);
-					id = Insert(schema.Name, withRef);
+
+					if (currentObject.Elements.Count() == 0)
+					{
+						id = null;			// nothing to insert!
+					}
+					else
+					{
+						BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
+						BsonDocument withRef = AddRef1(dealiasedDocument);
+						id = InsertRecord(schema, withRef);
+					}
 				}
 			}
 			else
@@ -199,12 +223,41 @@ namespace Clifton.MongoSemanticDatabase
 				}
 				else
 				{
-					BsonDocument withRef = AddRef1(currentObject);
-					id = Insert(schema.Name, withRef);
+					if (currentObject.Elements.Count() == 0)
+					{
+						id = null;			// nothing to insert!
+					}
+					else
+					{
+						BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
+						BsonDocument withRef = AddRef1(dealiasedDocument);
+						id = InsertRecord(schema, withRef);
+					}
 				}
 			}
 
 			return id;
+		}
+
+		protected BsonDocument DeAliasDocument(Schema schema, BsonDocument doc)
+		{
+			BsonDocument ret = new BsonDocument();
+
+			foreach (BsonElement el in doc.Elements)
+			{
+				string dealiasedName;
+
+				if (schema.ContainsAliasedType(el.Name, out dealiasedName))
+				{
+					ret[dealiasedName] = el.Value;
+				}
+				else
+				{
+					ret[el.Name] = el.Value;
+				}
+			}
+
+			return ret;
 		}
 
 		/// <summary>
@@ -417,7 +470,7 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			List<string> pipeline = new List<string>();
 
-			schema.ConcreteTypes.ForEach(ct => projections.Add(String.Format("'{0}':'${1}'", ct.Name, parentName + ct.Name)));
+			schema.ConcreteTypes.ForEach(ct => projections.Add(String.Format("'{0}':'${1}'", ct.Alias, parentName + ct.Name)));
 
 			foreach (Schema subtype in schema.Subtypes)
 			{
@@ -526,9 +579,9 @@ namespace Clifton.MongoSemanticDatabase
 			return refCount;
 		}
 
-		protected string Insert(string collectionName, BsonDocument doc)
+		protected string InsertRecord(Schema schema, BsonDocument doc)
 		{
-			db.GetCollection<BsonDocument>(collectionName).InsertOne(doc);
+			db.GetCollection<BsonDocument>(schema.Name).InsertOne(doc);
 			BsonValue bid = doc.Elements.Single(el => el.Name == "_id").Value;
 			string id = bid.ToString();
 
@@ -542,7 +595,10 @@ namespace Clifton.MongoSemanticDatabase
 			// Add the current schema's concrete types to the new JSON object.
 			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
-				newDoc.Add(ct.Name, doc[ct.Name]);
+				if (doc.Contains(ct.Alias))
+				{
+					newDoc.Add(ct.Alias, doc[ct.Alias]);
+				}
 			}
 
 			return newDoc;
@@ -550,14 +606,14 @@ namespace Clifton.MongoSemanticDatabase
 
 		protected BsonDocument RemoveCurrentConcreteObjects(Schema schema, BsonDocument doc)
 		{
-			BsonDocument subdoc = new BsonDocument(doc);
+			BsonDocument newDoc = new BsonDocument(doc);
 
 			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
-				subdoc.Remove(ct.Name);
+				newDoc.Remove(ct.Alias);
 			}
 
-			return subdoc;
+			return newDoc;
 		}
 
 		protected void InsertRecurseIntoSubtypes(Schema schema, BsonDocument currentObject, BsonDocument subdoc)
@@ -567,7 +623,11 @@ namespace Clifton.MongoSemanticDatabase
 				string subtypeId = InternalInsert(subtype, subdoc);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
-				currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+
+				if (subtypeId != null)
+				{
+					currentObject.Add(subtype.Name + "Id", new ObjectId(subtypeId));
+				}
 			}
 		}
 
