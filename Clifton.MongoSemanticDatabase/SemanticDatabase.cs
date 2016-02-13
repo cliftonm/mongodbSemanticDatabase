@@ -181,7 +181,8 @@ namespace Clifton.MongoSemanticDatabase
 				}
 				else
 				{
-					BsonDocument withRef = AddRef1(doc);
+					BsonDocument currentObject = GetConcreteObjects(schema, doc);
+					BsonDocument withRef = AddRef1(currentObject);
 					id = Insert(schema.Name, withRef);
 				}
 			}
@@ -416,7 +417,7 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			List<string> pipeline = new List<string>();
 
-			schema.ConcreteTypes.ForEach(kvp => projections.Add(String.Format("'{0}':'${1}'", kvp.Key, parentName + kvp.Key)));
+			schema.ConcreteTypes.ForEach(ct => projections.Add(String.Format("'{0}':'${1}'", ct.Name, parentName + ct.Name)));
 
 			foreach (Schema subtype in schema.Subtypes)
 			{
@@ -539,9 +540,9 @@ namespace Clifton.MongoSemanticDatabase
 			BsonDocument newDoc = new BsonDocument();
 
 			// Add the current schema's concrete types to the new JSON object.
-			foreach (string concreteType in schema.ConcreteTypes.Keys)
+			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
-				newDoc.Add(concreteType, doc[concreteType]);
+				newDoc.Add(ct.Name, doc[ct.Name]);
 			}
 
 			return newDoc;
@@ -551,9 +552,9 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			BsonDocument subdoc = new BsonDocument(doc);
 
-			foreach (string concreteType in schema.ConcreteTypes.Keys)
+			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
-				subdoc.Remove(concreteType);
+				subdoc.Remove(ct.Name);
 			}
 
 			return subdoc;

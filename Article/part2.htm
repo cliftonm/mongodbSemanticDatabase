@@ -1,0 +1,38 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Using MongoDB to Implement a Sem</title>
+</head>
+
+<body>
+
+<h2>Using MongoDB to Implement a Semantic Database - Part II</h2>
+<p>There are some flaws in the prototype that I implemented in Part I.&nbsp; 
+These are revealed immediately when we create a simple semantic type such as a 
+Date:</p>
+<p>[json]</p>
+<p>There are several problems here:</p>
+<ol>
+	<li>Because the same field name is used, the current implementation to 
+	insert records into the hierarchy doesn't know which is the correct value.</li>
+	<li>The root node is abstract -- it has no concrete types.&nbsp; The 
+	implementation in Part I doesn't support querying a semantic instance with 
+	an abstract root node.</li>
+	<li>The field name &quot;value&quot; is used repeatedly, which will cause collisions 
+	(just like it does in SQL) when we project the fields to a flattened list 
+	(like a SQL view).</li>
+	<li>Problem #2 also affects being able to perform insert/update/delete 
+	operations, again because the field names for different values are all the 
+	same: &quot;value&quot;.</li>
+</ol>
+<p>Let's fix the first problem by inserting a partial date that does not 
+conflict with duplicate field name problem.&nbsp; </p>
+<pre>sd.Insert(schema, BsonDocument.Parse(&quot;{value: 8, name: 'August'}&quot;));</pre>
+<p>Because the field name value is shared </p>
+<p>&nbsp;</p>
+
+</body>
+
+</html>

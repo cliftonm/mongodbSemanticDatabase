@@ -10,7 +10,7 @@ namespace UnitTests
 	public class SemanticDatabaseTests
 	{
 		[TestMethod]
-		public void CreateConcreteCollectionTest()
+		public void CreateCollectionTest()
 		{
 			SemanticDatabase sd = Helpers.CreateCleanDatabase();
 			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
@@ -45,6 +45,27 @@ namespace UnitTests
 			Assert.IsTrue(collections.Contains("areaCode"));
 			Assert.IsTrue(collections.Contains("exchange"));
 			Assert.IsTrue(collections.Contains("subscriberId"));
+		}
+
+		[TestMethod]
+		public void CreateConcreteCollectionTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema schema = Helpers.InstantiateSchema(@"
+			{
+				name: 'phoneNumber', 
+				concreteTypes:
+				[
+					{name: 'areaCode', alias: 'areaCode', type: 'System.String'},
+					{name: 'exchange', alias: 'areaCode', type: 'System.String'},
+					{name: 'subscriberId', alias: 'areaCode', type: 'System.String'}
+				]
+			}");
+			sd.InstantiateSchema(schema);
+			List<string> collections = sd.GetCollections();
+			Assert.IsTrue(collections.Count == 1, "Expected 1 collections");
+			Assert.IsTrue(collections.Contains("phoneNumber"));
 		}
 	}
 }

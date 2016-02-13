@@ -32,9 +32,9 @@ namespace UnitTests
 			{
 				name: 'countryCode', 
 				concreteTypes:
-				{
-					value: 'System.Int32',
-				},
+				[
+					{name: 'value', type: 'System.Int32'}
+				],
 				subtypes: 
 				[
 					{
@@ -44,9 +44,9 @@ namespace UnitTests
 							{
 								name: 'name', 
 								concreteTypes:
-								{
-									name: 'System.String'
-								}
+								[
+									{name: 'name', type: 'System.String'},
+								]
 							}
 						]
 					}
@@ -60,10 +60,58 @@ namespace UnitTests
 			{
 				name: 'countryCodeLookup', 
 				concreteTypes:
-				{
-					value: 'System.Int32',
-					name: 'System.String'
-				}
+				[
+					{name: 'value', type: 'System.Int32'},
+					{name: 'name', type: 'System.String'},
+				]
+			}");
+		}
+
+		public static Schema CreateDateSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'date', 
+				subTypes:
+				[
+					{
+						name: 'month',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'month', type: 'System.Int32'}
+						],
+						subtypes:
+						[
+							{
+								name: 'monthName',
+								subtypes:
+								[
+									{
+										name: 'name',
+										concreteTypes:
+										[
+											{name: 'name', type: 'System.String'}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						name: 'day',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'day', type: 'System.Int32'}
+						]
+					},
+					{
+						name: 'year',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'year', type: 'System.Int32'}
+						]
+					}
+				]
 			}");
 		}
 

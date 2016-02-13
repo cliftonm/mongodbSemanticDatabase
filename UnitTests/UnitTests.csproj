@@ -64,6 +64,7 @@
     <Compile Include="InsertTests.cs" />
     <Compile Include="QueryTests.cs" />
     <Compile Include="DeleteTests.cs" />
+    <Compile Include="DateTests.cs" />
     <Compile Include="UpdateTests.cs" />
   </ItemGroup>
   <ItemGroup>
