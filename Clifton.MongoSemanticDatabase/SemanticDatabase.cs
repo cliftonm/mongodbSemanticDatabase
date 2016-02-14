@@ -182,6 +182,10 @@ namespace Clifton.MongoSemanticDatabase
 			return docs;
 		}
 
+		public void Associate(Schema schema1, Schema schema2)
+		{
+		}
+
 		protected string InternalInsert(Schema schema, BsonDocument doc)
 		{
 			string id = null;
@@ -189,22 +193,22 @@ namespace Clifton.MongoSemanticDatabase
 			if (schema.IsConcreteType)
 			{
 				int refCount;
+				BsonDocument currentObject = GetConcreteObjects(schema, doc);
 
-				if (IsDuplicate(schema.Name, doc, out id, out refCount))
+				if (currentObject.Elements.Count() == 0)
 				{
-					IncrementRefCount(schema.Name, id, refCount);
+					id = null;			// nothing to insert!
 				}
 				else
 				{
-					BsonDocument currentObject = GetConcreteObjects(schema, doc);
+					BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
 
-					if (currentObject.Elements.Count() == 0)
+					if (IsDuplicate(schema.Name, dealiasedDocument, out id, out refCount))
 					{
-						id = null;			// nothing to insert!
+						IncrementRefCount(schema.Name, id, refCount);
 					}
 					else
 					{
-						BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
 						BsonDocument withRef = AddRef1(dealiasedDocument);
 						id = InsertRecord(schema, withRef);
 					}
@@ -217,19 +221,20 @@ namespace Clifton.MongoSemanticDatabase
 				InsertRecurseIntoSubtypes(schema, currentObject, subjobj);
 				int refCount;
 
-				if (IsDuplicate(schema.Name, currentObject, out id, out refCount))
+				if (currentObject.Elements.Count() == 0)
 				{
-					IncrementRefCount(schema.Name, id, refCount);
+					id = null;			// nothing to insert!
 				}
 				else
 				{
-					if (currentObject.Elements.Count() == 0)
+					BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
+
+					if (IsDuplicate(schema.Name, dealiasedDocument, out id, out refCount))
 					{
-						id = null;			// nothing to insert!
+						IncrementRefCount(schema.Name, id, refCount);
 					}
 					else
 					{
-						BsonDocument dealiasedDocument = DeAliasDocument(schema, currentObject);
 						BsonDocument withRef = AddRef1(dealiasedDocument);
 						id = InsertRecord(schema, withRef);
 					}

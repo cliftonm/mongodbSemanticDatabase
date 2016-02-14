@@ -68,5 +68,49 @@ namespace UnitTests
 			Assert.IsTrue(docs.Count == 1);
 			Assert.IsTrue(docs[0].ToString() == "{ \"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962 }");
 		}
+
+		[TestMethod]
+		public void MonthNameTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema monthLookupSchema = Helpers.CreateMonthNameLookupSchema();
+			InstantiateMonthLookup(sd, monthLookupSchema);
+			List<BsonDocument> docs = sd.QueryServerSide(monthLookupSchema);
+			Assert.IsTrue(docs.Count == 12);
+		}
+
+		[TestMethod]
+		public void MonthAssociationToMonthNameTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema monthLookupSchema = Helpers.CreateMonthNameLookupSchema();
+			Schema dateSchema = Helpers.CreatePureDateSchema();
+			sd.Associate(dateSchema, monthLookupSchema);
+			InstantiateMonthLookup(sd, monthLookupSchema);
+			InstantiateDate(sd, dateSchema);
+		}
+
+		protected void InstantiateMonthLookup(SemanticDatabase sd, Schema schema)
+		{
+			sd.Insert(schema, BsonDocument.Parse("{month: 1, monthName: 'January', monthAbbr: 'Jan'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 2, monthName: 'February', monthAbbr: 'Feb'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 3, monthName: 'March', monthAbbr: 'Mar'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 4, monthName: 'April', monthAbbr: 'Apr'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 5, monthName: 'May', monthAbbr: 'May'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 6, monthName: 'June', monthAbbr: 'Jun'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 7, monthName: 'July', monthAbbr: 'Jul'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 8, monthName: 'August', monthAbbr: 'Aug'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 9, monthName: 'September', monthAbbr: 'Sep'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 10, monthName: 'October', monthAbbr: 'Oct'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 11, monthName: 'November', monthAbbr: 'Nov'}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 12, monthName: 'December', monthAbbr: 'Dec'}"));
+		}
+
+		protected void InstantiateDate(SemanticDatabase sd, Schema schema)
+		{
+			sd.Insert(schema, BsonDocument.Parse("{month: 8, day: 19, year: 1962}"));
+		}
 	}
 }

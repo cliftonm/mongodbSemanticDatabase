@@ -115,6 +115,82 @@ namespace UnitTests
 			}");
 		}
 
+		public static Schema CreatePureDateSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'date', 
+				subTypes:
+				[
+					{
+						name: 'month',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'month', type: 'System.Int32'}
+						],
+					},
+					{
+						name: 'day',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'day', type: 'System.Int32'}
+						]
+					},
+					{
+						name: 'year',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'year', type: 'System.Int32'}
+						]
+					}
+				]
+			}");
+		}
+
+		public static Schema CreateMonthNameLookupSchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'monthLookup',
+				subtypes:
+				[
+					{
+						name: 'month',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'month', type: 'System.Int32'}
+						],
+					},
+					{
+						name: 'monthName',
+						subtypes:
+						[
+							{
+								name: 'name',
+								concreteTypes:
+								[
+									{name: 'name', alias: 'monthName', type: 'System.String'}
+								]
+							}
+						]
+					},
+					{
+						name: 'monthAbbr',
+						subtypes:
+						[
+							{
+								name: 'name',
+								concreteTypes:
+								[
+									{name: 'name', alias: 'monthAbbr', type: 'System.String'}
+								]
+							}
+						]
+					}
+				]
+			}");
+		}
+
 		public static Schema CreatePersonSchema()
 		{
 			return Helpers.InstantiateSchema(@"
