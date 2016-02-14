@@ -15,6 +15,12 @@ namespace Clifton.MongoSemanticDatabase
 		public SemanticDatabaseException(string msg) : base(msg) { }
 	}
 
+	public class CommonType
+	{
+		public Schema Schema1 { get; set; }
+		public Schema Schema2 { get; set; }
+	}
+
 	public class SemanticDatabase
 	{
 		protected IMongoClient client;
@@ -182,8 +188,47 @@ namespace Clifton.MongoSemanticDatabase
 			return docs;
 		}
 
-		public void Associate(Schema schema1, Schema schema2)
+		/// <summary>
+		/// Do a deep drill into the semantic types defined by each schema and determine what associations can be made between them.
+		/// Association are determined by shared subtypes.  This method reports on all the parents of shared subtypes between all the
+		/// schemas in the request.
+		/// </summary>
+		public List<CommonType> DiscoverAssociations(Schema[] schemas)
 		{
+			schemas.ForEach(s => s.FixupParents());
+			List<CommonType> commonTypes = GetCommonTypes(schemas);
+
+			return commonTypes;
+		}
+
+		protected List<CommonType> GetCommonTypes(Schema[] schemas)
+		{
+			List<CommonType> commonTypes = new List<CommonType>();
+			List<List<Schema>> schemaTypes = new List<List<Schema>>();
+
+			for (int i = 0; i < schemas.Length; i++)
+			{
+				schemaTypes.Add(schemas[i].GetTypes());
+			}
+
+			for (int i = 0; i < schemas.Length; i++)
+			{
+				foreach (Schema schema1 in schemaTypes[i])
+				{
+					for (int j = i + 1; j < schemas.Length; j++)
+					{
+						foreach (Schema schema2 in schemaTypes[j])
+						{
+							if (schema1.Name == schema2.Name)
+							{
+								commonTypes.Add(new CommonType() { Schema1 = schema1, Schema2 = schema2 });
+							}
+						}
+					}
+				}
+			}
+
+			return commonTypes;
 		}
 
 		protected string InternalInsert(Schema schema, BsonDocument doc)

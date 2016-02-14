@@ -207,10 +207,11 @@ namespace UnitTests
 								subtypes:
 								[
 									{
-									name: 'name',
-									concreteTypes:
-									{
-										name: 'System.String'
+										name: 'name',
+										concreteTypes:
+										[
+											{name: 'name', alias: 'firstName', type: 'System.String'}
+										]
 									}
 								]
 							},
@@ -219,10 +220,11 @@ namespace UnitTests
 								subtypes:
 								[
 									{
-									name: 'name',
-									concreteTypes:
-									{
-										name: 'System.String'
+										name: 'name',
+										concreteTypes:
+										[
+											{name: 'name', alias: 'lastName', type: 'System.String'}
+										]
 									}
 								]
 							},

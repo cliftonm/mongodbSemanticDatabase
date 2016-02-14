@@ -252,6 +252,119 @@ public void InsertFullDateTest()
 </ul>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
+<h2>Discovering Associations, aka Shared Meaning</h2>
+<p>Being able to discover implicit associations is one of the unique 
+features of a semantic database.&nbsp; Given three semantic types:</p>
+<ol>
+	<li>Person</li>
+	<li>Date</li>
+<li>MonthLookup</li>
+</ol>
+<p>with the following schema:</p>
+<p><img border="0" src="threefoldSchema.png" width="677" height="299"></p>
+<p>our &quot;discovery&quot; method determines the following associations (left-to-right 
+is bottom-most to top-most):</p>
+<pre>month &lt;- monthLookup
+month &lt;- date
+
+name &lt;- monthName &lt;- monthLookup
+name &lt;- firstName &lt;- personName &lt;- person
+
+name &lt;- monthName &lt;- monthLookup
+name &lt;- lastName &lt;- personName &lt;- person
+
+name &lt;- monthAbbr &lt;- monthLookup
+name &lt;- firstName &lt;- personName &lt;- person
+
+name &lt;- monthAbbr &lt;- monthLookup
+name &lt;- lastName &lt;- personName &lt;- person</pre>
+<p>From this, we could construct a query where we can say &quot;give me all the dates 
+whose month's name is also the person's first name&quot;.&nbsp; This 
+would follow the association chain like this:</p>
+<p><img border="0" src="associations1.png" width="390" height="110"></p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
+<p>In a non-semantic database, we could not automatically discover these associations because 
+field names like &quot;month&quot; and &quot;firstName&quot; have no intrinsic semantic meaning.</p>
+<h3>Some Sample Data</h3>
+<p>Let's populate the database with some data:</p>
+<pre>protected void InstantiateMonthLookup(SemanticDatabase sd, Schema schema)
+{
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 1, monthName: 'January', monthAbbr: 'Jan'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 2, monthName: 'February', monthAbbr: 'Feb'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 3, monthName: 'March', monthAbbr: 'Mar'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 4, monthName: 'April', monthAbbr: 'Apr'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 5, monthName: 'May', monthAbbr: 'May'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 6, monthName: 'June', monthAbbr: 'Jun'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 7, monthName: 'July', monthAbbr: 'Jul'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 8, monthName: 'August', monthAbbr: 'Aug'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 9, monthName: 'September', monthAbbr: 'Sep'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 10, monthName: 'October', monthAbbr: 'Oct'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 11, monthName: 'November', monthAbbr: 'Nov'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 12, monthName: 'December', monthAbbr: 'Dec'}&quot;));
+}
+
+protected void InstantiateDate(SemanticDatabase sd, Schema schema)
+{
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 8, day: 19, year: 1962}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{month: 4, day: 1, year: 2016}&quot;));
+}
+
+protected void InstantiatePerson(SemanticDatabase sd, Schema schema)
+{
+  sd.Insert(schema, BsonDocument.Parse(&quot;{firstName: 'Marc', lastName: 'Clifton'}&quot;));
+  sd.Insert(schema, BsonDocument.Parse(&quot;{firstName: 'April', lastName: 'Jones'}&quot;));
+}</pre>
+<h3>Create An Associative Query to Mine Shared Meaning</h3>
+<p>We can now write a mongo query (the database gets its name not just from 
+being able to store lots of documents):</p>
+<pre>db.firstName.aggregate(
+// firstName -&gt; name
+{ $lookup: {from: 'name', localField: 'nameId', foreignField: '_id', as: 'fname'} },
+{ $unwind: '$fname' },
+
+// name -&gt; monthName -&gt; monthLookup
+{ $lookup: {from: 'monthName', localField: 'fname._id', foreignField: 'nameId', as: 'monthName'} },
+{ $unwind: '$monthName' },
+{ $lookup: {from: 'monthLookup', localField: 'monthName._id', foreignField: 'monthNameId', as: 'monthLookup'} },
+{ $unwind: '$monthLookup'},
+
+// monthLookup -&gt; month
+{ $lookup: {from: 'month', localField: 'monthLookup.monthId', foreignField: '_id', as: 'month'} },
+{ $unwind: '$month'},
+
+// month -&gt; date
+{ $lookup: {from: 'date', localField: 'month._id', foreignField: 'monthId', as: 'date'} },
+{ $unwind: '$date'},
+
+// date.day -&gt; day.value
+{ $lookup: {from: 'day', localField: 'date.dayId', foreignField: '_id', as: 'day'} },
+{ $unwind: '$day'},
+
+// date.year -&gt; year.value
+{ $lookup: {from: 'year', localField: 'date.yearId', foreignField: '_id', as: 'year'} },
+{ $unwind: '$year'},
+
+{ $project: {'monthName': '$fname.name', 'month': '$month.value', 'day': '$day.value', 'year': '$year.value', '_id':0} }
+)</pre>
+<h3>The Result</h3>
+<p>This gives us all the people who's first names matches the month name of dates in 
+the system.</p>
+<p><img border="0" src="fnamemonthdate.png" width="293" height="132"></p>
+<p><img border="0" src="key-small.jpg" width="94" height="33"></p>
+<p>What we've achieved here is quite interesting!&nbsp; Because our database is 
+<i>semantic</i>, the system knows that things like &quot;month&quot; and &quot;name&quot; have a 
+shared meaning, so we can ask the schema &quot;what entities have shared meaning&quot; and 
+we can weave through the hierarchies of the semantic types to combine types into 
+new and interesting queries.&nbsp; This kind of query could of course be 
+expressed in SQL (and perhaps more simply), but we would be comparing 
+non-semantic field values that the <i>programmer</i> decided had shared meaning, 
+rather than the <i>system discovering the shared meaning</i>.&nbsp; By letting 
+the system discover the shared meaning, the <i>user</i>, not the programmer, can 
+make new and interesting associations.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

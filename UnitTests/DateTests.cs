@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using MongoDB.Bson;
@@ -81,15 +82,24 @@ namespace UnitTests
 		}
 
 		[TestMethod]
-		public void MonthAssociationToMonthNameTest()
+		public void DiscoverAssociationsTest()
 		{
 			SemanticDatabase sd = Helpers.CreateCleanDatabase();
 			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
 			Schema monthLookupSchema = Helpers.CreateMonthNameLookupSchema();
 			Schema dateSchema = Helpers.CreatePureDateSchema();
-			sd.Associate(dateSchema, monthLookupSchema);
+			Schema personSchema = Helpers.CreatePersonSchema();
+			List<CommonType> commonTypes = sd.DiscoverAssociations(new Schema[] { monthLookupSchema, dateSchema, personSchema });
+
+			foreach(CommonType ct in commonTypes)
+			{
+				System.Diagnostics.Debug.WriteLine(String.Join(" <- ", ct.Schema1.GetTypeChain().Select(t=>t.Name)));
+				System.Diagnostics.Debug.WriteLine(String.Join(" <- ", ct.Schema2.GetTypeChain().Select(t => t.Name)));
+			}
+
 			InstantiateMonthLookup(sd, monthLookupSchema);
 			InstantiateDate(sd, dateSchema);
+			InstantiatePerson(sd, personSchema);
 		}
 
 		protected void InstantiateMonthLookup(SemanticDatabase sd, Schema schema)
@@ -111,6 +121,13 @@ namespace UnitTests
 		protected void InstantiateDate(SemanticDatabase sd, Schema schema)
 		{
 			sd.Insert(schema, BsonDocument.Parse("{month: 8, day: 19, year: 1962}"));
+			sd.Insert(schema, BsonDocument.Parse("{month: 4, day: 1, year: 2016}"));
+		}
+
+		protected void InstantiatePerson(SemanticDatabase sd, Schema schema)
+		{
+			sd.Insert(schema, BsonDocument.Parse("{firstName: 'Marc', lastName: 'Clifton'}"));
+			sd.Insert(schema, BsonDocument.Parse("{firstName: 'April', lastName: 'Jones'}"));
 		}
 	}
 }
