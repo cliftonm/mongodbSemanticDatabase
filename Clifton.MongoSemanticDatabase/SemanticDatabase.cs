@@ -5,6 +5,8 @@ using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using Clifton.Core.ExtensionMethods;
 
@@ -85,6 +87,14 @@ namespace Clifton.MongoSemanticDatabase
 		}
 
 		/// <summary>
+		/// Returns a MongoDB collection object.
+		/// </summary>
+		public IMongoCollection<BsonDocument> GetCollection(string collectionName)
+		{
+			return db.GetCollection<BsonDocument>(collectionName);
+		}
+
+		/// <summary>
 		/// Creates the collections for the specified schema.
 		/// </summary>
 		public void InstantiateSchema(Schema typeDef)
@@ -102,6 +112,14 @@ namespace Clifton.MongoSemanticDatabase
 					InstantiateSchema(subtype);
 				}
 			}
+		}
+
+		public Schema Associate(Schema schema1, Schema schema2)
+		{
+			Schema associationSchema = CreateAssociationSchema(schema1, schema2);
+			InstantiateSchema(associationSchema);
+
+			return associationSchema;
 		}
 
 		public string Insert(Schema schema, BsonDocument doc)
@@ -714,6 +732,77 @@ namespace Clifton.MongoSemanticDatabase
 		protected void CreateConcreteType(Schema typeDef)
 		{
 			CreateCollection(typeDef.Name);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="schema1"></param>
+		/// <param name="schema2"></param>
+		/// <param name="assocationTypeName">Association type, like a general purpose "dateAssociation" or a more specific "relation" association (mother, friend, son, etc)</param>
+		/// <returns></returns>
+		protected Schema CreateAssociationSchema(Schema schema1, Schema schema2)
+		{
+			string json = String.Format(@"
+			{{
+				name: '{0}_{1}', 
+				concreteTypes:
+				[
+					{{name: '{0}Id', type: 'System.String'}},
+					{{name: '{1}Id', type: 'System.String'}}
+				],
+				subTypes:
+				[
+					{{
+						name: '{0}_{1}Association',
+						subtypes:
+						[
+							{{
+								name: 'Association',
+								subtypes:
+								[
+									{{
+										name: 'forwardAssociationName',
+										subtypes:
+										[
+											{{
+												name: 'name',
+												concreteTypes:
+												[
+													{{name: 'name', alias: 'forwardAssociationName', type: 'System.String'}}
+												]
+											}}
+										]
+									}},
+									{{
+										name: 'reverseAssociationName',
+										subtypes:
+										[
+											{{
+												name: 'name',
+												concreteTypes:
+												[
+													{{name: 'name', alias: 'reverseAssociationName', type: 'System.String'}}
+												]
+											}}
+										]
+									}}
+								]
+							}}
+						]
+					}}
+				]
+			}}", schema1.Name, schema2.Name);
+
+			return SchemaFromJson(json);
+		}
+
+		protected static Schema SchemaFromJson(string json)
+		{
+			Schema target = new Schema();
+			JsonConvert.PopulateObject(json, target);
+
+			return target;
 		}
 	}
 }

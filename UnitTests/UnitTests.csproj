@@ -39,6 +39,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\installations\MongoDB\CSharpDriver-2.2.0\MongoDB.Bson.dll</HintPath>
     </Reference>
+    <Reference Include="MongoDB.Driver, Version=2.2.0.262, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\installations\MongoDB\CSharpDriver-2.2.0\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver.Core, Version=2.2.0.262, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\installations\MongoDB\CSharpDriver-2.2.0\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\MongoDbTests\Lib\Newtonsoft.Json.dll</HintPath>
@@ -65,6 +73,7 @@
     <Compile Include="QueryTests.cs" />
     <Compile Include="DeleteTests.cs" />
     <Compile Include="DateTests.cs" />
+    <Compile Include="ExplicitAssociationTests.cs" />
     <Compile Include="UpdateTests.cs" />
   </ItemGroup>
   <ItemGroup>
