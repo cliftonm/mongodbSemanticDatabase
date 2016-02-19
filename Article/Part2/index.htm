@@ -362,6 +362,69 @@ rather than the <i>system discovering the shared meaning</i>.&nbsp; By letting
 the system discover the shared meaning, the <i>user</i>, not the programmer, can 
 make new and interesting associations.</p>
 <p>&nbsp;</p>
+<h2>Explicit Associations</h2>
+<p>Explicit associations are made between two semantic types.&nbsp; When we 
+explicitly create an association, say between schemata A and B, the following 
+structure is created:</p>
+<p><img border="0" src="associations2.png" width="570" height="366"></p>
+<p>The abstract types are the semantic hierarchy that is created for us.&nbsp; 
+While this looks overly complicated, it has the benefit of creating a hierarchy 
+of semantic meaning for the association.</p>
+<h3>A-B Associations</h3>
+<p>We can create an explicit association between person and date types:</p>
+<pre>Schema dateSchema = Helpers.CreatePureDateSchema();
+Schema personSchema = Helpers.CreatePersonSchema();
+Schema personDateSchema = sd.Associate(personSchema, dateSchema);
+
+string personId = sd.Insert(personSchema, BsonDocument.Parse(&quot;{firstName: 'Marc', lastName: 'Clifton'}&quot;));
+string dateId = sd.Insert(dateSchema, BsonDocument.Parse(&quot;{month: 8, day: 19, year: 1962}&quot;));
+
+BsonDocument doc = new BsonDocument(&quot;personId&quot;, new ObjectId(personId));
+doc.Add(&quot;dateId&quot;, new ObjectId(dateId));
+doc.Add(&quot;forwardAssociationName&quot;, &quot;birthdate&quot;);
+doc.Add(&quot;reverseAssociationName&quot;, &quot;birthdate&quot;);
+sd.Insert(personDateSchema, doc);</pre>
+<p>Here we are creating an association for &quot;birthdate.&quot;&nbsp; We can 
+inspect the association collections in RoboMongo:</p>
+<p><img border="0" src="collections1.png" width="241" height="304"></p>
+<p>This also includes the other semantic types as well.</p>
+<h3>A-A Associations</h3>
+<p>Not all association names identical in both directions.&nbsp; For example, 
+here's an association between two people -- note the shared schema and how the 
+association Id field name is adjusted for us:</p>
+<pre>Schema personSchema = Helpers.CreatePersonSchema();
+Schema personPersonSchema = sd.Associate(personSchema, personSchema);
+
+string personId1 = sd.Insert(personSchema, BsonDocument.Parse(&quot;{firstName: 'Marc', lastName: 'Clifton'}&quot;));
+string personId2 = sd.Insert(personSchema, BsonDocument.Parse(&quot;{firstName: 'Elisabeth', lastName: 'Clifton'}&quot;));
+
+BsonDocument doc = new BsonDocument(&quot;person1Id&quot;, new ObjectId(personId1));
+doc.Add(&quot;person2Id&quot;, new ObjectId(personId2));
+doc.Add(&quot;forwardAssociationName&quot;, &quot;son&quot;); // Marc is the son of Elisabeth
+doc.Add(&quot;reverseAssociationName&quot;, &quot;mother&quot;); // Elisabeth is the mother of Marc
+sd.Insert(personPersonSchema, doc);</pre>
+<p>Here, the forward association name is &quot;son&quot; and the reverse association name 
+is &quot;mother.&quot;</p>
+<p><img border="0" src="colllections2.png" width="242" height="228"></p>
+<h3>Actor (or Perpetrator) Associations</h3>
+<p>Actor associations are associations between two types in which a third type 
+is involved.&nbsp; For example, ?????</p>
+<h3>Association Lifetime</h3>
+<p>Associations can:</p>
+<ul>
+	<li>Be permanent, such as a &quot;parent-child&quot; relationship between two person 
+	types.</li>
+	<li>An event, such as purchasing a property or committing a crime.</li>
+	<li>Have duration, such as ownership of the property.</li>
+</ul>
+<p><img border="0" src="thinking.png" width="117" height="117"></p>
+<p>Associations with dates, like &quot;birth date&quot; and &quot;death date&quot;, are a strange 
+exception because the association is made between an entity and a date type, 
+where the date type itself is a fixed date--the association between the entity 
+and the date, while permanent and event-ish, does not have a duration -- the 
+association with a date type implies a permanent event.&nbsp; It's a bit weird.&nbsp; 
+Association lifetime really applies only between two concrete entities, not a 
+concrete entity and an abstract concept like &quot;date.&quot;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

@@ -743,22 +743,32 @@ namespace Clifton.MongoSemanticDatabase
 		/// <returns></returns>
 		protected Schema CreateAssociationSchema(Schema schema1, Schema schema2)
 		{
+			string schema1Name = schema1.Name;
+			string schema2Name = schema2.Name;
+
+			// If this is an association between the same schema, the tweak the names.
+			if (schema1Name == schema2Name)
+			{
+				schema1Name += "1";
+				schema2Name += "2";
+			}
+
 			string json = String.Format(@"
 			{{
 				name: '{0}_{1}', 
 				concreteTypes:
 				[
-					{{name: '{0}Id', type: 'System.String'}},
-					{{name: '{1}Id', type: 'System.String'}}
+					{{name: '{2}Id', type: 'System.String'}},
+					{{name: '{3}Id', type: 'System.String'}}
 				],
 				subTypes:
 				[
 					{{
-						name: '{0}_{1}Association',
+						name: '{0}_{1}_Association',
 						subtypes:
 						[
 							{{
-								name: 'Association',
+								name: 'association',
 								subtypes:
 								[
 									{{
@@ -792,7 +802,7 @@ namespace Clifton.MongoSemanticDatabase
 						]
 					}}
 				]
-			}}", schema1.Name, schema2.Name);
+			}}", schema1.Name, schema2.Name, schema1Name, schema2Name);
 
 			return SchemaFromJson(json);
 		}
