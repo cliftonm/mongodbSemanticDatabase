@@ -181,17 +181,89 @@ namespace Clifton.MongoSemanticDatabase
 			return records;
 		}
 
-		public List<BsonDocument> QueryServerSide(Schema schema, string id = null)
+		public List<BsonDocument> QueryServerSide(Schema schema)
 		{
 			var collection = db.GetCollection<BsonDocument>(schema.Name);
-			List<string> projections = new List<string>();
-			List<string> pipeline = BuildQueryPipeline(schema, String.Empty, projections);
-			pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+			List<string> plan = GetPlan(schema);
 			var aggr = collection.Aggregate();
-			pipeline.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
+			plan.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
 			List<BsonDocument> records = aggr.ToList();
 
 			return records;
+		}
+
+		public List<BsonDocument> QueryAssociationServerSide(Schema schema1, Schema schema2)
+		{
+			List<string> fullPipeline = new List<string>();
+			List<string> pipeline1;
+			List<string> projections1;
+			List<string> pipeline2;
+			List<string> projections2;
+			GetPlan(schema1, out pipeline1, out projections1);
+			GetPlan(schema2, out pipeline2, out projections2, schema2.Name+".");
+
+			// schema association join:
+
+			List<string> associationJoin = new List<string>();
+			string schema1Name = schema1.Name;
+			string schema2Name = schema2.Name;
+			string assocCollectionName = schema1.Name + "_" + schema2.Name;
+			associationJoin.Add(String.Format("{{$lookup: {{from: '{0}', localField: '_id', foreignField: '{1}', as: '{0}'}} }},",
+				assocCollectionName, 
+				schema1.Name + "Id"));
+			associationJoin.Add(String.Format("{{$unwind: '${0}'}},", assocCollectionName));
+			associationJoin.Add(String.Format("{{$lookup: {{from: '{1}', localField: '{0}.dateId', foreignField: '_id', as: '{1}'}} }},",
+				assocCollectionName, schema2Name));
+			associationJoin.Add(String.Format("{{$unwind: '${0}'}},", schema2Name));
+
+			List<string> assocPipeline = new List<string>();
+			// specific association to common assocation piece:
+			assocPipeline.Add(String.Format("{{$lookup: {{from: '{0}_Association', localField: '{0}.{0}_AssociationId', foreignField: '_id', as: 'specAssoc'}} }},",
+				assocCollectionName));
+			assocPipeline.Add("{$unwind: '$specAssoc'},");
+
+			// Common part:
+			assocPipeline.Add("{$lookup: {from: 'association', localField: 'specAssoc.associationId', foreignField: '_id', as: 'assoc'} },");
+			assocPipeline.Add("{$unwind: '$assoc'},");
+			assocPipeline.Add("{$lookup: {from: 'forwardAssociationName', localField: 'assoc.forwardAssociationNameId', foreignField: '_id', as: 'fan'} },");
+			assocPipeline.Add("{$unwind: '$fan'},");
+			assocPipeline.Add("{$lookup: {from: 'reverseAssociationName', localField: 'assoc.reverseAssociationNameId', foreignField: '_id', as: 'ran'} },");
+			assocPipeline.Add("{$unwind: '$ran'},");
+			assocPipeline.Add("{$lookup: {from: 'name', localField: 'fan.nameId', foreignField: '_id', as: 'fanName'} },");
+			assocPipeline.Add("{$unwind: '$fanName'},");
+			assocPipeline.Add("{$lookup: {from: 'name', localField: 'ran.nameId', foreignField: '_id', as: 'ranName'} },");
+			assocPipeline.Add("{$unwind: '$ranName'},");
+
+			fullPipeline.AddRange(pipeline1);
+			fullPipeline[fullPipeline.Count - 1] = fullPipeline.Last() + ",";
+			fullPipeline.AddRange(associationJoin);
+			fullPipeline.AddRange(assocPipeline);
+			fullPipeline.AddRange(pipeline2);
+			fullPipeline[fullPipeline.Count - 1] = fullPipeline.Last() + ",";
+
+			List<string> allProjections = new List<string>();
+			allProjections.AddRange(projections1);
+			allProjections.AddRange(projections2);
+			allProjections.Add("'fwdAssocName':'$fanName.name'");
+			allProjections.Add("'revAssocName':'$ranName.name'");
+
+			fullPipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", allProjections)));
+
+			string plan = "db." + schema1.Name + ".aggregate(" + String.Join("\r\n", fullPipeline) + ")";
+
+			var collection = db.GetCollection<BsonDocument>(schema1.Name);
+			var aggr = collection.Aggregate();
+			fullPipeline.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
+			List<BsonDocument> records = aggr.ToList();
+
+			return records;
+		}
+
+		public string ShowPlan(Schema schema)
+		{
+			List<string> plan = GetPlan(schema);
+
+			return "db." + schema.Name + ".aggregate(" + String.Join("\r\n", plan) + ")";
 		}
 
 		/// <summary>
@@ -217,6 +289,22 @@ namespace Clifton.MongoSemanticDatabase
 			List<CommonType> commonTypes = GetCommonTypes(schemas);
 
 			return commonTypes;
+		}
+
+		protected List<string> GetPlan(Schema schema, string parentName = "")
+		{
+			List<string> projections = new List<string>();
+			List<string> pipeline = BuildQueryPipeline(schema, parentName, projections);
+			pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
+			pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+
+			return pipeline;
+		}
+
+		protected void GetPlan(Schema schema, out List<string> pipeline, out List<string> projections, string parentName = "")
+		{
+			projections = new List<string>();
+			pipeline = BuildQueryPipeline(schema, parentName, projections);
 		}
 
 		protected List<CommonType> GetCommonTypes(Schema[] schemas)
@@ -542,9 +630,14 @@ namespace Clifton.MongoSemanticDatabase
 
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{0}'}} }},", subtype.Name, subtype.Name + "Id", parentName));
-				pipeline.Add(String.Format("{{$unwind: '${0}'}}", subtype.Name));
-				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Name + ".", projections);
+				if (pipeline.Count > 0)
+				{
+					pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
+				}
+
+				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{3}'}} }},", subtype.Name, subtype.Name + "Id", parentName, subtype.Alias));
+				pipeline.Add(String.Format("{{$unwind: '${0}'}}", subtype.Alias));
+				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Alias + ".", projections);
 
 				if (subpipeline.Count > 0)
 				{
@@ -759,7 +852,10 @@ namespace Clifton.MongoSemanticDatabase
 				concreteTypes:
 				[
 					{{name: '{2}Id', type: 'System.String'}},
-					{{name: '{3}Id', type: 'System.String'}}
+					{{name: '{3}Id', type: 'System.String'}},
+					{{name: 'on', type: 'System.Decimal'}},
+					{{name: 'startingOn', type: 'System.Decimal'}},
+					{{name: 'endingOn', type: 'System.Decimal'}},
 				],
 				subTypes:
 				[

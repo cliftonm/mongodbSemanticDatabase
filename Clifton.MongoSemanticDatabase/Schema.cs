@@ -21,7 +21,16 @@ namespace Clifton.MongoSemanticDatabase
 
 	public class Schema
 	{
+		protected string alias;
+
 		public string Name { get; set; }
+		
+		public string Alias
+		{
+			get { return alias ?? Name; }
+			set { alias = value; }
+		}
+
 		public Type Type { get; set; }
 
 		public List<Schema> Subtypes { get; set; }

@@ -208,6 +208,7 @@ namespace UnitTests
 								[
 									{
 										name: 'name',
+										alias: 'fname',
 										concreteTypes:
 										[
 											{name: 'name', alias: 'firstName', type: 'System.String'}
@@ -221,6 +222,7 @@ namespace UnitTests
 								[
 									{
 										name: 'name',
+										alias: 'lname',
 										concreteTypes:
 										[
 											{name: 'name', alias: 'lastName', type: 'System.String'}
