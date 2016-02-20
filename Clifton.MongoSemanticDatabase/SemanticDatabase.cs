@@ -199,22 +199,32 @@ namespace Clifton.MongoSemanticDatabase
 			List<string> projections1;
 			List<string> pipeline2;
 			List<string> projections2;
-			GetPlan(schema1, out pipeline1, out projections1);
-			GetPlan(schema2, out pipeline2, out projections2, schema2.Name+".");
+			string schema1Num = "";
+			string schema2Num = "";
 
+			if (schema1.Name == schema2.Name)
+			{
+				schema1Num = "1";
+				schema2Num = "2";
+			}
+
+			GetPlan(schema1, out pipeline1, out projections1, "", schema1Num);
+			GetPlan(schema2, out pipeline2, out projections2, schema2.Name + schema2Num + ".", schema2Num);
+	
 			// schema association join:
 
 			List<string> associationJoin = new List<string>();
 			string schema1Name = schema1.Name;
 			string schema2Name = schema2.Name;
 			string assocCollectionName = schema1.Name + "_" + schema2.Name;
-			associationJoin.Add(String.Format("{{$lookup: {{from: '{0}', localField: '_id', foreignField: '{1}', as: '{0}'}} }},",
+			associationJoin.Add(String.Format("{{$lookup: {{from: '{0}', localField: '_id', foreignField: '{1}{2}Id', as: '{0}'}} }},",
 				assocCollectionName, 
-				schema1.Name + "Id"));
+				schema1.Name,
+				schema1Num));
 			associationJoin.Add(String.Format("{{$unwind: '${0}'}},", assocCollectionName));
-			associationJoin.Add(String.Format("{{$lookup: {{from: '{1}', localField: '{0}.dateId', foreignField: '_id', as: '{1}'}} }},",
-				assocCollectionName, schema2Name));
-			associationJoin.Add(String.Format("{{$unwind: '${0}'}},", schema2Name));
+			associationJoin.Add(String.Format("{{$lookup: {{from: '{1}', localField: '{0}.{1}{2}Id', foreignField: '_id', as: '{1}{2}'}} }},",
+				assocCollectionName, schema2Name, schema2Num));
+			associationJoin.Add(String.Format("{{$unwind: '${0}{1}'}},", schema2Name, schema2Num));
 
 			List<string> assocPipeline = new List<string>();
 			// specific association to common assocation piece:
@@ -301,10 +311,10 @@ namespace Clifton.MongoSemanticDatabase
 			return pipeline;
 		}
 
-		protected void GetPlan(Schema schema, out List<string> pipeline, out List<string> projections, string parentName = "")
+		protected void GetPlan(Schema schema, out List<string> pipeline, out List<string> projections, string parentName = "", string schemaNum = "")
 		{
 			projections = new List<string>();
-			pipeline = BuildQueryPipeline(schema, parentName, projections);
+			pipeline = BuildQueryPipeline(schema, parentName, projections, schemaNum);
 		}
 
 		protected List<CommonType> GetCommonTypes(Schema[] schemas)
@@ -622,11 +632,11 @@ namespace Clifton.MongoSemanticDatabase
 			collection.DeleteOne(filter);
 		}
 
-		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections)
+		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections, string schemaNum = "")
 		{
 			List<string> pipeline = new List<string>();
 
-			schema.ConcreteTypes.ForEach(ct => projections.Add(String.Format("'{0}':'${1}'", ct.Alias, parentName + ct.Name)));
+			schema.ConcreteTypes.ForEach(ct => projections.Add(String.Format("'{0}{2}':'${1}'", ct.Alias, parentName + ct.Name, schemaNum)));
 
 			foreach (Schema subtype in schema.Subtypes)
 			{
@@ -635,9 +645,14 @@ namespace Clifton.MongoSemanticDatabase
 					pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
 				}
 
-				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{3}'}} }},", subtype.Name, subtype.Name + "Id", parentName, subtype.Alias));
-				pipeline.Add(String.Format("{{$unwind: '${0}'}}", subtype.Alias));
-				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Alias + ".", projections);
+				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{3}{4}'}} }},", 
+					subtype.Name, 
+					subtype.Name + "Id", 
+					parentName, 
+					subtype.Alias, 
+					schemaNum));
+				pipeline.Add(String.Format("{{$unwind: '${0}{1}'}}", subtype.Alias, schemaNum));
+				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Alias + schemaNum + ".", projections, schemaNum);
 
 				if (subpipeline.Count > 0)
 				{
