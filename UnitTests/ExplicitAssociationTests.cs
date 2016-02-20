@@ -73,6 +73,47 @@ namespace UnitTests
 			Assert.IsTrue(docs.Count == 1);
 			Assert.IsTrue(docs[0].ToString() == "{ \"firstName1\" : \"Marc\", \"lastName1\" : \"Clifton\", \"firstName2\" : \"Elisabeth\", \"lastName2\" : \"Clifton\", \"fwdAssocName\" : \"son\", \"revAssocName\" : \"mother\" }");
 		}
+
+		[TestMethod]
+		public void AssociateAssociationTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema personSchema = Helpers.CreatePersonSchema();
+			Schema propertySchema = Helpers.CreatePropertySchema();
+
+			string personId = sd.Insert(personSchema, BsonDocument.Parse("{firstName: 'Marc', lastName: 'Clifton'}"));
+			string propertyId = sd.Insert(propertySchema, BsonDocument.Parse("{propertyName: 'Roxbury Rd'}"));
+
+			// Create person-property association record.
+			Schema personPropertySchema = sd.Associate(personSchema, propertySchema);
+			BsonDocument doc = new BsonDocument("personId", new ObjectId(personId));
+			doc.Add("propertyId", new ObjectId(propertyId));
+			doc.Add("forwardAssociationName", "purchased");
+			doc.Add("reverseAssociationName", "purchased by");
+			string personPropertyId = sd.Insert(personPropertySchema, doc);
+
+			// Verify the person-property association.
+			List<BsonDocument> docs = sd.QueryAssociationServerSide(personSchema, propertySchema);
+			Assert.IsTrue(docs.Count == 1);
+			Assert.IsTrue(docs[0].ToString() == "{ \"firstName\" : \"Marc\", \"lastName\" : \"Clifton\", \"propertyName\" : \"Roxbury Rd\", \"fwdAssocName\" : \"purchased\", \"revAssocName\" : \"purchased by\" }");
+
+			Schema dateSchema = Helpers.CreatePureDateSchema();
+			string dateId = sd.Insert(dateSchema, BsonDocument.Parse("{month: 12, day: 30, year: 2015}"));
+
+			// Create [person-property association] - date association record.
+			Schema personProperty_DateSchema = sd.Associate(personPropertySchema, dateSchema);
+			doc = new BsonDocument("person_propertyId", new ObjectId(personPropertyId));
+			doc.Add("dateId", new ObjectId(dateId));
+			doc.Add("forwardAssociationName", "purchased on");
+			doc.Add("reverseAssociationName", "purchased on");
+			sd.Insert(personProperty_DateSchema, doc);
+
+			// Verify the [person-property association] - date association record.
+			docs = sd.QueryAssociationServerSide(personPropertySchema, dateSchema);
+			Assert.IsTrue(docs.Count == 1);
+			Assert.IsTrue(docs[0].ToString().Contains("\"forwardAssociationName\" : \"purchased\", \"reverseAssociationName\" : \"purchased by\", \"month\" : 12, \"day\" : 30, \"year\" : 2015, \"fwdAssocName\" : \"purchased on\", \"revAssocName\" : \"purchased on\""));
+		}
 	}
 }
 
@@ -131,58 +172,6 @@ db.person.aggregate({$lookup: {from: 'personName', localField:'personNameId', fo
 // NOTE 2:
 
 /*
-db.person.aggregate({$lookup: {from: 'personName', localField:'personNameId', foreignField: '_id', as: 'personName'} },
-{$unwind: '$personName'},
-{$lookup: {from: 'firstName', localField:'personName.firstNameId', foreignField: '_id', as: 'firstName'} },
-{$unwind: '$firstName'},
-{$lookup: {from: 'name', localField:'firstName.nameId', foreignField: '_id', as: 'fname'} },
-{$unwind: '$fname'},
-{$lookup: {from: 'lastName', localField:'personName.lastNameId', foreignField: '_id', as: 'lastName'} },
-{$unwind: '$lastName'},
-{$lookup: {from: 'name', localField:'lastName.nameId', foreignField: '_id', as: 'lname'} },
-{$unwind: '$lname'},
-{$lookup: {from: 'person_person', localField: '_id', foreignField: 'personId', as: 'person_person'} },
-{$unwind: '$person_person'},
-{$lookup: {from: 'person', localField: 'person_person.dateId', foreignField: '_id', as: 'person'} },
-{$unwind: '$person'},
-{$lookup: {from: 'person_person_Association', localField: 'person_person.person_person_AssociationId', foreignField: '_id', as: 'specAssoc'} },
-{$unwind: '$specAssoc'},
-{$lookup: {from: 'association', localField: 'specAssoc.associationId', foreignField: '_id', as: 'assoc'} },
-{$unwind: '$assoc'},
-{$lookup: {from: 'forwardAssociationName', localField: 'assoc.forwardAssociationNameId', foreignField: '_id', as: 'fan'} },
-{$unwind: '$fan'},
-{$lookup: {from: 'reverseAssociationName', localField: 'assoc.reverseAssociationNameId', foreignField: '_id', as: 'ran'} },
-{$unwind: '$ran'},
-{$lookup: {from: 'name', localField: 'fan.nameId', foreignField: '_id', as: 'fanName'} },
-{$unwind: '$fanName'},
-{$lookup: {from: 'name', localField: 'ran.nameId', foreignField: '_id', as: 'ranName'} },
-{$unwind: '$ranName'},
-{$lookup: {from: 'personName', localField:'person.personNameId', foreignField: '_id', as: 'personName'} },
-{$unwind: '$personName'},
-{$lookup: {from: 'firstName', localField:'personName.firstNameId', foreignField: '_id', as: 'firstName'} },
-{$unwind: '$firstName'},
-{$lookup: {from: 'name', localField:'firstName.nameId', foreignField: '_id', as: 'fname'} },
-{$unwind: '$fname'},
-{$lookup: {from: 'lastName', localField:'personName.lastNameId', foreignField: '_id', as: 'lastName'} },
-{$unwind: '$lastName'},
-{$lookup: {from: 'name', localField:'lastName.nameId', foreignField: '_id', as: 'lname'} },
-{$unwind: '$lname'},
-{$project: {
-    'firstName':'$fname.name',
-    'lastName':'$lname.name',
-    'firstName':'$fname.name',
-    'lastName':'$lname.name',
-    'fwdAssocName':'$fanName.name',
-    'revAssocName':'$ranName.name', 
-    '_id':0} })
- */
-
-
-
-// Should be:
-
-/*
-
 db.person.aggregate({$lookup: {from: 'personName', localField:'personNameId', foreignField: '_id', as: 'personName1'} },
 {$unwind: '$personName1'},
 {$lookup: {from: 'firstName', localField:'personName1.firstNameId', foreignField: '_id', as: 'firstName1'} },

@@ -867,10 +867,7 @@ namespace Clifton.MongoSemanticDatabase
 				concreteTypes:
 				[
 					{{name: '{2}Id', type: 'System.String'}},
-					{{name: '{3}Id', type: 'System.String'}},
-					{{name: 'on', type: 'System.Decimal'}},
-					{{name: 'startingOn', type: 'System.Decimal'}},
-					{{name: 'endingOn', type: 'System.Decimal'}},
+					{{name: '{3}Id', type: 'System.String'}}
 				],
 				subTypes:
 				[
@@ -888,6 +885,7 @@ namespace Clifton.MongoSemanticDatabase
 										[
 											{{
 												name: 'name',
+												alias: 'fwdName',
 												concreteTypes:
 												[
 													{{name: 'name', alias: 'forwardAssociationName', type: 'System.String'}}
@@ -901,6 +899,7 @@ namespace Clifton.MongoSemanticDatabase
 										[
 											{{
 												name: 'name',
+ 												alias: 'revName',
 												concreteTypes:
 												[
 													{{name: 'name', alias: 'reverseAssociationName', type: 'System.String'}}

@@ -236,6 +236,27 @@ namespace UnitTests
 			}");
 		}
 
+		/// <summary>
+		/// A simple schema for testing association associations.
+		/// </summary>
+		public static Schema CreatePropertySchema()
+		{
+			return Helpers.InstantiateSchema(@"
+			{
+				name: 'property', 
+				subtypes:
+				[
+					{
+						name: 'name',
+						concreteTypes:
+						[
+							{name: 'name', alias: 'propertyName', type: 'System.String'}
+						]
+					}
+				]
+			}");
+		}
+
 		public static Schema CreatePhoneNumberSchema()
 		{
 			return Helpers.InstantiateSchema(@"
