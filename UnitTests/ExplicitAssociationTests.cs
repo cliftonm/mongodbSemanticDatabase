@@ -103,8 +103,8 @@ namespace UnitTests
 
 			// Create [person-property association] - date association record.
 			Schema personProperty_DateSchema = sd.Associate(personPropertySchema, dateSchema);
-			doc = new BsonDocument("person_propertyId", new ObjectId(personPropertyId));
-			doc.Add("dateId", new ObjectId(dateId));
+			doc = new BsonDocument(personPropertySchema.Name + "Id", new ObjectId(personPropertyId));
+			doc.Add(dateSchema.Name + "Id", new ObjectId(dateId));
 			doc.Add("forwardAssociationName", "purchased on");
 			doc.Add("reverseAssociationName", "purchased on");
 			sd.Insert(personProperty_DateSchema, doc);

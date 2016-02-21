@@ -16,6 +16,8 @@ namespace Clifton.MongoSemanticDatabase
 			set { alias = value; }
 		}
 
+		public bool IsAliased { get { return Alias != Name; } }
+
 		public Type Type { get; set; }
 	}
 
@@ -30,6 +32,8 @@ namespace Clifton.MongoSemanticDatabase
 			get { return alias ?? Name; }
 			set { alias = value; }
 		}
+
+		public bool IsAliased { get { return Alias != Name; } }
 
 		public Type Type { get; set; }
 

@@ -406,9 +406,6 @@ sd.Insert(personPersonSchema, doc);</pre>
 <p>Here, the forward association name is &quot;son&quot; and the reverse association name 
 is &quot;mother.&quot;</p>
 <p><img border="0" src="colllections2.png" width="242" height="228"></p>
-<h3>Actor (or Perpetrator) Associations</h3>
-<p>Actor associations are associations between two types in which a third type 
-is involved.&nbsp; For example, ?????</p>
 <h3>Association Lifetime</h3>
 <p>Associations can:</p>
 <ul>
@@ -431,11 +428,64 @@ with them.&nbsp; For example:</p>
 	<li>Person - Property: Can have a &quot;purchase date&quot;, &quot;sold date&quot;, etc.</li>
 	<li>Person - Person: Can have a &quot;marriage date&quot;, &quot;divorce date&quot;, etc</li>
 	<li>Person - Crime: Will have an event date, possibly a duration: &quot;was 
-	engaged in recording the DNC's private meetings...&quot;</li>
+	engaged in recording the DNC's private meetings at the Watergate Hotel...&quot;</li>
 </ul>
 <p>Since associations are implemented as first class semantic types, we can 
 associate<i> the association </i>&nbsp;to a date, time, datetime, or any other 
-semantic type:</p>
+semantic type.&nbsp; In this example, we create a Person and Property type, 
+associate them, then create a Date type associated with the association:</p>
+<p><img border="0" src="unittest.png" width="14" height="32"></p>
+<pre>[TestMethod]
+public void AssociateAssociationTest()
+{
+  SemanticDatabase sd = Helpers.CreateCleanDatabase();
+  Assert.IsTrue(sd.GetCollections().Count == 0, &quot;Collection should be 0 length.&quot;);
+  Schema personSchema = Helpers.CreatePersonSchema();
+  Schema propertySchema = Helpers.CreatePropertySchema();
+
+  string personId = sd.Insert(personSchema, BsonDocument.Parse(&quot;{firstName: 'Marc', lastName: 'Clifton'}&quot;));
+  string propertyId = sd.Insert(propertySchema, BsonDocument.Parse(&quot;{propertyName: 'Roxbury Rd'}&quot;));
+
+  // Create person-property association record.
+  Schema personPropertySchema = sd.Associate(personSchema, propertySchema);
+  BsonDocument doc = new BsonDocument(&quot;personId&quot;, new ObjectId(personId));
+  doc.Add(&quot;propertyId&quot;, new ObjectId(propertyId));
+  doc.Add(&quot;forwardAssociationName&quot;, &quot;purchased&quot;);
+  doc.Add(&quot;reverseAssociationName&quot;, &quot;purchased by&quot;);
+  string personPropertyId = sd.Insert(personPropertySchema, doc);
+
+  // Verify the person-property association.
+  List&lt;BsonDocument&gt; docs = sd.QueryAssociationServerSide(personSchema, propertySchema);
+  Assert.IsTrue(docs.Count == 1);
+  Assert.IsTrue(docs[0].ToString() == &quot;{ \&quot;firstName\&quot; : \&quot;Marc\&quot;, \&quot;lastName\&quot; : \&quot;Clifton\&quot;, \&quot;propertyName\&quot; : \&quot;Roxbury Rd\&quot;, \&quot;fwdAssocName\&quot; : \&quot;purchased\&quot;, \&quot;revAssocName\&quot; : \&quot;purchased by\&quot; }&quot;);
+
+  Schema dateSchema = Helpers.CreatePureDateSchema();
+  string dateId = sd.Insert(dateSchema, BsonDocument.Parse(&quot;{month: 12, day: 30, year: 2015}&quot;));
+
+  // Create [person-property association] - date association record.
+  Schema personProperty_DateSchema = sd.Associate(personPropertySchema, dateSchema);
+  doc = new BsonDocument(personPropertySchema.Name + &quot;Id&quot;, new ObjectId(personPropertyId));
+  doc.Add(dateSchema.Name + &quot;Id&quot;, new ObjectId(dateId));
+  doc.Add(&quot;forwardAssociationName&quot;, &quot;purchased on&quot;);
+  doc.Add(&quot;reverseAssociationName&quot;, &quot;purchased on&quot;);
+  sd.Insert(personProperty_DateSchema, doc);
+
+  // Verify the [person-property association] - date association record.
+  docs = sd.QueryAssociationServerSide(personPropertySchema, dateSchema);
+  Assert.IsTrue(docs.Count == 1);
+  Assert.IsTrue(docs[0].ToString().Contains(&quot;\&quot;forwardAssociationName\&quot; : \&quot;purchased\&quot;, \&quot;reverseAssociationName\&quot; : \&quot;purchased by\&quot;, \&quot;month\&quot; : 12, \&quot;day\&quot; : 30, \&quot;year\&quot; : 2015, \&quot;fwdAssocName\&quot; : \&quot;purchased on\&quot;, \&quot;revAssocName\&quot; : \&quot;purchased on\&quot;&quot;));
+}</pre>
+<p><img border="0" src="crazy.png" width="264" height="191"></p>
+<p>The full record returned looks like this:</p>
+<p><img border="0" src="assocassoc.png" width="521" height="219"></p>
+<p>Notice we get the record ID's of the association as well as the forward and 
+reverse association names of the association (&quot;purchased&quot; and &quot;purchased by&quot;) 
+and also the association names of the &quot;association-date&quot; association.</p>
+<p>We could just as easily (hah!) associate an association with a lifetime, 
+having a beginning-on and ending-on date, time, or datetime semantic type.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
