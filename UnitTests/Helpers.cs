@@ -259,7 +259,7 @@ namespace UnitTests
 
 		public static Schema CreatePhoneNumberSchema()
 		{
-			return Helpers.InstantiateSchema(@"
+			return InstantiateSchema(@"
 			{
 				name: 'phoneNumber', 
 				subtypes:
@@ -267,23 +267,23 @@ namespace UnitTests
 					{
 						name: 'areaCode',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'areaCode', type: 'System.String'}
+						]
 					},
 					{
 						name: 'exchange',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'exchange', type: 'System.String'}
+						]
 					},
 					{
 						name: 'subscriberId',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'subscriberId', type: 'System.String'}
+						]
 					}
 				]
 			}");
@@ -291,7 +291,7 @@ namespace UnitTests
 
 		public static Schema CreateAddressSchema()
 		{
-			return Helpers.InstantiateSchema(@"
+			return InstantiateSchema(@"
 			{
 				name: 'address', 
 				subtypes:
@@ -299,70 +299,99 @@ namespace UnitTests
 					{
 						name: 'streetPrefix',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'streetPrefix', type: 'System.String'}
+						]
 					},
 					{
 						name: 'streetName',
 						subtypes:
 						[
 							{
-							name: 'name',
-							concreteTypes:
-							{
-								name: 'System.String'
+								name: 'name',
+								concreteTypes:
+								[
+									{name: 'value', alias: 'streetName', type: 'System.String'}
+								]
 							}
 						]
 					},
 					{
 						name: 'streetPostfix',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'streetPostfix', type: 'System.String'}
+						]
 					},
 					{
 						name: 'boxNumber',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'boxNumber', type: 'System.String'}
+						]
 					},
 					{
 						name: 'city',
 						concreteTypes:
-						{
-							value: 'System.String'
-						}
+						[
+							{name: 'value', alias: 'city', type: 'System.String'}
+						]
 					},
 					{
 						name: 'state',
-						concreteTypes:
-						{
-							abbr: 'System.String'
-						},
 						subtypes:
 						[
 							{
-							name: 'name',
-							concreteTypes:
-							{
-								name: 'System.String'
+								name: 'name',
+								concreteTypes:
+								[
+									{name: 'name', alias: 'abbr', type: 'System.String'}
+								]
 							}
 						]
 					},
 					{
 						name: 'zipCode',
 						concreteTypes:
-						{
-							zip: 'System.String'
-							zip4: 'System.String'
-						}
+						[
+							{name: 'zip', type: 'System.String'},
+							{name: 'zip4', type: 'System.String'}
+						]
 					},
 				]
 			}");
 		}
 
+		public static Schema CreateTimeSchema()
+		{
+			return InstantiateSchema(@"
+			{
+				name: 'time', 
+				subTypes:
+				[
+					{
+						name: 'hour24',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'hour24', type: 'System.Int32'}
+						],
+					},
+					{
+						name: 'minute',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'minute', type: 'System.Int32'}
+						]
+					},
+					{
+						name: 'second',
+						concreteTypes:
+						[
+							{name: 'value', alias: 'second', type: 'System.Int32'}
+						]
+					}
+				]
+			}");
+		}
 	}
 }

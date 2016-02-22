@@ -140,5 +140,25 @@ namespace UnitTests
 			Assert.IsTrue(bson[2].ToString().Contains("\"value\" : 30, \"name\" : \"Greece\""));
 			Assert.IsTrue(bson[3].ToString().Contains("\"value\" : 40, \"name\" : \"Romania\""));
 		}
+
+		/// <summary>
+		/// Test updating a person name, where first name and last name share the same subtype "name".
+		/// </summary>
+		[TestMethod]
+		public void UpdateWithCommonSubTypeTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema schema = Helpers.CreatePersonSchema();
+			BsonDocument originalData = BsonDocument.Parse("{firstName: '1', lastName: '2'}");
+			string recordId = sd.Insert(schema, originalData);
+			BsonDocument newData = BsonDocument.Parse("{firstName: 'Marc', lastName: 'Clifton'}");
+			sd.Update(schema, originalData, newData, recordId);
+			
+			List<BsonDocument> bson;
+			bson = sd.Query(schema);
+			Assert.IsTrue(bson.Count == 1);
+			Assert.IsTrue(bson[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\""));
+		}
 	}
 }

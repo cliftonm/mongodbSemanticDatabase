@@ -49,8 +49,9 @@ namespace WinformExample
 
 					if (item is Schema)
 					{
-						ResetBuffers();
 						currentSchema = (Schema)item;
+						string plan = model.Db.ShowPlan(currentSchema);
+						ResetBuffers();
 						ShowCollection(currentSchema);
 						ShowSemanticData(currentSchema);
 					}

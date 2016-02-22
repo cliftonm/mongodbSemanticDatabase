@@ -26,6 +26,7 @@ namespace Clifton.MongoSemanticDatabase
 		protected string alias;
 
 		public string Name { get; set; }
+		public string NameAsId { get { return Name + "Id"; } }
 		
 		public string Alias
 		{

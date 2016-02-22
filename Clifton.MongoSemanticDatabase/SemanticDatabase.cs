@@ -504,6 +504,8 @@ namespace Clifton.MongoSemanticDatabase
 
 		// TODO: Test that updating only one field does not trigger a change in reference counts of the non-changed field, or an insert of the non-changed field.
 
+		// TODO: Test that inserting/updating a hierarchy where the root (or any other level) has concrete types inserts/updates the subtype concrete types as well.
+
 		/// <summary>
 		/// The complete set of values for the original semantic type must be provided as well as the new values -- we can't actually just update a value based on some primary key.
 		/// If there are no other references to the semantic type, the concrete types can simply be updated.
@@ -535,7 +537,7 @@ namespace Clifton.MongoSemanticDatabase
 
 					if (refCount == 1)
 					{
-						Update(schema.Name, id, docOriginal, docNew);
+						Update(schema, id, docOriginal, docNew);
 					}
 					else
 					{
@@ -595,7 +597,7 @@ namespace Clifton.MongoSemanticDatabase
 					if (refCount == 1)
 					{
 						BsonDocument currentNewObject = GetConcreteObjects(schema, docNew);
-						Update(schema.Name, id, record, currentNewObject);
+						Update(schema, id, record, currentNewObject);
 					}
 					else
 					{
@@ -624,7 +626,7 @@ namespace Clifton.MongoSemanticDatabase
 
 					if (refCount == 1)
 					{
-						Update(schema.Name, id, record, currentNewObject);
+						Update(schema, id, record, currentNewObject);
 					}
 					else
 					{
@@ -638,11 +640,12 @@ namespace Clifton.MongoSemanticDatabase
 			return id;
 		}
 
-		protected void Update(string collectionName, string id, BsonDocument docOriginal, BsonDocument docNew)
+		protected void Update(Schema schema, string id, BsonDocument docOriginal, BsonDocument docNew)
 		{
+			string collectionName = schema.Name;
 			var collection = db.GetCollection<BsonDocument>(collectionName);
 			var filter = new BsonDocument("_id", new ObjectId(id));
-			Dictionary<string, BsonValue> changes = GetChanges(docOriginal, docNew);
+			Dictionary<string, BsonValue> changes = GetChanges(schema, docOriginal, docNew);
 
 			if (changes.Count > 0)
 			{
@@ -660,20 +663,56 @@ namespace Clifton.MongoSemanticDatabase
 		}
 
 		/// <summary>
-		/// Compares to documents, assumed to have elements that do NOT have sub-documents.
+		/// Compares two documents, assumed to have elements that do NOT have sub-documents.
+		/// Only the concrete types for the schema are compared, and the resulting map is de-aliased.
 		/// </summary>
-		protected Dictionary<string, BsonValue> GetChanges(BsonDocument originalDoc, BsonDocument newDoc)
+		protected Dictionary<string, BsonValue> GetChanges(Schema schema, BsonDocument originalDoc, BsonDocument newDoc)
 		{
 			Dictionary<string, BsonValue> changes = new Dictionary<string, BsonValue>();
 
-			foreach (BsonElement el in newDoc.Elements)
+			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
 				// Looks like this does a value comparison (not a BsonValue reference comparison), which is good.
-				if ( (originalDoc.Contains(el.Name)) && (originalDoc[el.Name] != el.Value) )
+				// Field exists in original, and value is different...
+				if ( (originalDoc.Contains(ct.Alias)) && (originalDoc[ct.Alias] != newDoc[ct.Alias]) )
 				{
-					changes[el.Name] = el.Value;
+					changes[ct.Name] = newDoc[ct.Alias];
+				}
+				// TODO: What about field is only in the new document?
+				// TODO: What about field is missing in the new document?
+			}
+
+			// Also include subtype references that exist in the new document.
+			foreach (Schema subtype in schema.Subtypes)
+			{
+				if (newDoc.Contains(subtype.NameAsId))
+				{
+					if (originalDoc.Contains(subtype.NameAsId))
+					{
+						if (newDoc[subtype.NameAsId] != originalDoc[subtype.NameAsId])
+						{
+							changes[subtype.NameAsId] = newDoc[subtype.NameAsId];
+						}
+					}
+					else
+					{
+						changes[subtype.NameAsId] = newDoc[subtype.NameAsId];
+					}
 				}
 			}
+
+			//foreach (BsonElement el in newDoc.Elements)
+			//{
+			//	// Looks like this does a value comparison (not a BsonValue reference comparison), which is good.
+			//	// Field exists in original, and value is different...
+			//	if ((originalDoc.Contains(el.Name)) && (originalDoc[el.Name] != el.Value))
+			//	{
+			//		changes[el.Name] = el.Value;
+			//	}
+			//	// TODO: What about field is only in the new document?
+			//	// TODO: What about field is missing in the new document?
+			//}
+
 
 			return changes;
 		}
