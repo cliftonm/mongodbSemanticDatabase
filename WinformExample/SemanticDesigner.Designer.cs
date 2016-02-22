@@ -30,16 +30,18 @@
 		{
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.tvTypes = new System.Windows.Forms.TreeView();
-			this.lblCollectionName = new System.Windows.Forms.Label();
-			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
-			this.lblSemanticType = new System.Windows.Forms.Label();
 			this.dgvSemanticData = new System.Windows.Forms.DataGridView();
+			this.lblSemanticType = new System.Windows.Forms.Label();
+			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
+			this.lblCollectionName = new System.Windows.Forms.Label();
+			this.label1 = new System.Windows.Forms.Label();
+			this.tbLog = new System.Windows.Forms.TextBox();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
 			this.splitContainer1.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// splitContainer1
@@ -54,6 +56,8 @@
 			// 
 			// splitContainer1.Panel2
 			// 
+			this.splitContainer1.Panel2.Controls.Add(this.tbLog);
+			this.splitContainer1.Panel2.Controls.Add(this.label1);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvSemanticData);
 			this.splitContainer1.Panel2.Controls.Add(this.lblSemanticType);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvCollectionData);
@@ -72,6 +76,41 @@
 			this.tvTypes.Size = new System.Drawing.Size(236, 732);
 			this.tvTypes.TabIndex = 0;
 			// 
+			// dgvSemanticData
+			// 
+			this.dgvSemanticData.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.dgvSemanticData.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+			this.dgvSemanticData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+			this.dgvSemanticData.Location = new System.Drawing.Point(388, 32);
+			this.dgvSemanticData.Name = "dgvSemanticData";
+			this.dgvSemanticData.RowHeadersVisible = false;
+			this.dgvSemanticData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+			this.dgvSemanticData.Size = new System.Drawing.Size(490, 193);
+			this.dgvSemanticData.TabIndex = 3;
+			// 
+			// lblSemanticType
+			// 
+			this.lblSemanticType.AutoSize = true;
+			this.lblSemanticType.Location = new System.Drawing.Point(385, 13);
+			this.lblSemanticType.Name = "lblSemanticType";
+			this.lblSemanticType.Size = new System.Drawing.Size(91, 15);
+			this.lblSemanticType.TabIndex = 2;
+			this.lblSemanticType.Text = "Semantic Type:";
+			// 
+			// dgvCollectionData
+			// 
+			this.dgvCollectionData.AllowUserToAddRows = false;
+			this.dgvCollectionData.AllowUserToDeleteRows = false;
+			this.dgvCollectionData.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+			this.dgvCollectionData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+			this.dgvCollectionData.Location = new System.Drawing.Point(18, 32);
+			this.dgvCollectionData.Name = "dgvCollectionData";
+			this.dgvCollectionData.ReadOnly = true;
+			this.dgvCollectionData.RowHeadersVisible = false;
+			this.dgvCollectionData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+			this.dgvCollectionData.Size = new System.Drawing.Size(346, 193);
+			this.dgvCollectionData.TabIndex = 1;
+			// 
 			// lblCollectionName
 			// 
 			this.lblCollectionName.AutoSize = true;
@@ -81,44 +120,25 @@
 			this.lblCollectionName.TabIndex = 0;
 			this.lblCollectionName.Text = "Collection:";
 			// 
-			// dgvCollectionData
+			// label1
 			// 
-			this.dgvCollectionData.AllowUserToAddRows = false;
-			this.dgvCollectionData.AllowUserToDeleteRows = false;
-			this.dgvCollectionData.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.dgvCollectionData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-			this.dgvCollectionData.Location = new System.Drawing.Point(18, 32);
-			this.dgvCollectionData.Name = "dgvCollectionData";
-			this.dgvCollectionData.ReadOnly = true;
-			this.dgvCollectionData.RowHeadersVisible = false;
-			this.dgvCollectionData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-			this.dgvCollectionData.Size = new System.Drawing.Size(860, 193);
-			this.dgvCollectionData.TabIndex = 1;
+			this.label1.AutoSize = true;
+			this.label1.Location = new System.Drawing.Point(15, 537);
+			this.label1.Name = "label1";
+			this.label1.Size = new System.Drawing.Size(31, 15);
+			this.label1.TabIndex = 4;
+			this.label1.Text = "Log:";
 			// 
-			// lblSemanticType
+			// tbLog
 			// 
-			this.lblSemanticType.AutoSize = true;
-			this.lblSemanticType.Location = new System.Drawing.Point(18, 242);
-			this.lblSemanticType.Name = "lblSemanticType";
-			this.lblSemanticType.Size = new System.Drawing.Size(91, 15);
-			this.lblSemanticType.TabIndex = 2;
-			this.lblSemanticType.Text = "Semantic Type:";
-			// 
-			// dgvSemanticData
-			// 
-			this.dgvSemanticData.AllowUserToAddRows = false;
-			this.dgvSemanticData.AllowUserToDeleteRows = false;
-			this.dgvSemanticData.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.dgvSemanticData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-			this.dgvSemanticData.Location = new System.Drawing.Point(18, 260);
-			this.dgvSemanticData.Name = "dgvSemanticData";
-			this.dgvSemanticData.ReadOnly = true;
-			this.dgvSemanticData.RowHeadersVisible = false;
-			this.dgvSemanticData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-			this.dgvSemanticData.Size = new System.Drawing.Size(860, 193);
-			this.dgvSemanticData.TabIndex = 3;
+			this.tbLog.Location = new System.Drawing.Point(18, 555);
+			this.tbLog.Multiline = true;
+			this.tbLog.Name = "tbLog";
+			this.tbLog.ReadOnly = true;
+			this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+			this.tbLog.Size = new System.Drawing.Size(405, 165);
+			this.tbLog.TabIndex = 5;
+			this.tbLog.WordWrap = false;
 			// 
 			// SemanticDesigner
 			// 
@@ -133,8 +153,8 @@
 			this.splitContainer1.Panel2.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
 			this.splitContainer1.ResumeLayout(false);
-			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).EndInit();
 			this.ResumeLayout(false);
 
 		}
@@ -147,6 +167,8 @@
 		private System.Windows.Forms.Label lblCollectionName;
 		private System.Windows.Forms.DataGridView dgvSemanticData;
 		private System.Windows.Forms.Label lblSemanticType;
+		private System.Windows.Forms.TextBox tbLog;
+		private System.Windows.Forms.Label label1;
 	}
 }
 

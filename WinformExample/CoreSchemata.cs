@@ -149,21 +149,21 @@ namespace WinformExample
 						name: 'areaCode',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'areaCode', type: 'System.String'}
 						]
 					},
 					{
 						name: 'exchange',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'exchange', type: 'System.String'}
 						]
 					},
 					{
 						name: 'subscriberId',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'subscriberId', type: 'System.String'}
 						]
 					}
 				]
@@ -181,7 +181,7 @@ namespace WinformExample
 						name: 'streetPrefix',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'streetPrefix', type: 'System.String'}
 						]
 					},
 					{
@@ -192,7 +192,7 @@ namespace WinformExample
 								name: 'name',
 								concreteTypes:
 								[
-									{name: 'value', type: 'System.String'}
+									{name: 'value', alias: 'streetName', type: 'System.String'}
 								]
 							}
 						]
@@ -201,36 +201,32 @@ namespace WinformExample
 						name: 'streetPostfix',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'streetPostfix', type: 'System.String'}
 						]
 					},
 					{
 						name: 'boxNumber',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'boxNumber', type: 'System.String'}
 						]
 					},
 					{
 						name: 'city',
 						concreteTypes:
 						[
-							{name: 'value', type: 'System.String'}
+							{name: 'value', alias: 'city', type: 'System.String'}
 						]
 					},
 					{
 						name: 'state',
-						concreteTypes:
-						[
-							{name: 'abbr', type: 'System.String'}
-						],
 						subtypes:
 						[
 							{
 								name: 'name',
 								concreteTypes:
 								[
-									{name: 'abbr', type: 'System.String'}
+									{name: 'name', alias: 'abbr', type: 'System.String'}
 								]
 							}
 						]

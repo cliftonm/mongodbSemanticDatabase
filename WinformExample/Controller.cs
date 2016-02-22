@@ -14,48 +14,182 @@ namespace WinformExample
 		public SemanticDesigner View { get; set; }
 
 		protected Model model;
+		protected List<ConcreteType> semanticColumns;
+		protected Dictionary<string, string> currentValues;
+		protected Schema currentSchema;
+		public string currentId;
+		protected DataRow newRow;
 
 		public Controller(Model model)
 		{
 			this.model = model;
+			currentValues = new Dictionary<string, string>();
+			semanticColumns = new List<ConcreteType>();
 		}
 
 		public void InstantiateMissingLookups()
 		{
-			if (!model.Db.GetCollections().Contains("monthLookup"))
-			{
-				InstantiateMonthLookup(model.Db, model.GetSchema("monthLookup"));	
-			}
+			Try(() =>
+				{
+					if (!model.Db.GetCollections().Contains("monthLookup"))
+					{
+						InstantiateMonthLookup(model.Db, model.GetSchema("monthLookup"));
+					}
+				});
 		}
 
+		/// <summary>
+		/// Treeview selection.
+		/// </summary>
 		public void AfterSelectEvent(object sender, TreeViewEventArgs e)
 		{
-			object item = e.Node.Tag;
+			Try(() =>
+				{
+					object item = e.Node.Tag;
 
-			if (item is Schema)
+					if (item is Schema)
+					{
+						ResetBuffers();
+						currentSchema = (Schema)item;
+						ShowCollection(currentSchema);
+						ShowSemanticData(currentSchema);
+					}
+					else if (item is ConcreteType)
+					{
+					}
+				});
+		}
+
+		public void NewRowEvent(object sender, DataTableNewRowEventArgs e)
+		{
+			View.Log("New Row");
+			newRow = e.Row;
+		}
+
+		public void RowDeletedEvent(object sender, DataRowChangeEventArgs e)
+		{
+			View.Log("Row Deleted");
+		}
+
+		public void RowChangedEvent(object sender, DataRowChangeEventArgs e)
+		{
+			Try(() =>
+				{
+					View.Log("Row Changed");
+
+					if (newRow != null)
+					{
+						View.Log("Inserting Record");
+						BsonDocument doc = GetDocument(newRow);
+						View.Log(doc.ToString());
+						model.Db.Insert(currentSchema, doc);
+						newRow = null;
+					}
+					else
+					{
+						View.Log("Updating Record");
+						BsonDocument docOld = GetDocument(currentValues);
+						BsonDocument docNew = GetDocument(View.SelectedSemanticRow);
+						View.Log("  from: " + docOld.ToString());
+						View.Log("  to: " + docNew.ToString());
+						model.Db.Update(currentSchema, docOld, docNew, currentId);
+					}
+				});
+		}
+
+		/// <summary>
+		/// User is navigating the semantic grid.
+		/// </summary>
+		public void SelectionChangedEvent(object sender, EventArgs e)
+		{
+			Try(() =>
+				{
+					int rowIdx = View.SelectedSemanticRowIndex;
+					View.Log("Selection Changed: " + rowIdx);
+
+					if (rowIdx >= 0)
+					{
+						if (rowIdx < View.NumSemanticRows)
+						{
+							if (newRow != null)
+							{
+								View.Log("Adding row cancelled");
+								newRow = null;
+							}
+
+							CaptureCurrentValues(View.GetSemanticRowAt(rowIdx));
+						}
+					}
+				});
+		}
+
+		protected void ResetBuffers()
+		{
+			semanticColumns.Clear();
+			currentValues.Clear();
+			currentId = null;
+		}
+
+		protected BsonDocument GetDocument(DataRow row)
+		{
+			BsonDocument doc = new BsonDocument();
+
+			foreach (ConcreteType ct in semanticColumns)
 			{
-				ShowCollection((Schema)item);
-				ShowSemanticData((Schema)item);
+				doc.Add(ct.Alias, row[ct.Alias].ToString());
 			}
-			else if (item is ConcreteType)
+
+			return doc;
+		}
+
+		protected BsonDocument GetDocument(Dictionary<string, string> vals)
+		{
+			BsonDocument doc = new BsonDocument();
+
+			foreach (ConcreteType ct in semanticColumns)
 			{
+				doc.Add(ct.Alias, currentValues[ct.Alias]);
+			}
+
+			return doc;
+		}
+
+		protected bool IsNewRow(DataGridViewRow row)
+		{
+			return row.Index == ((DataView)row.DataGridView.DataSource).Count;
+		}
+
+		protected void CaptureCurrentValues(DataRow row)
+		{
+			currentValues.Clear();
+			currentId = row["_id"].ToString();
+
+			foreach (ConcreteType ct in semanticColumns)
+			{
+				currentValues[ct.Alias] = row[ct.Alias].ToString();
 			}
 		}
 
 		protected void ShowCollection(Schema schema)
 		{
-			List<BsonDocument> docs = model.Db.GetAll(schema.Name);
-			DataTable dt = InitializeCollectionColumns(schema);
-			PopulateCollectionTable(dt, docs, schema);
-			View.ShowCollectionData(dt);
+			Try(() =>
+				{
+					List<BsonDocument> docs = model.Db.GetAll(schema.Name);
+					DataTable dt = InitializeCollectionColumns(schema);
+					PopulateCollectionTable(dt, docs, schema);
+					View.ShowCollectionData(dt);
+				});
 		}
 
 		protected void ShowSemanticData(Schema schema)
 		{
-			List<BsonDocument> docs = model.Db.Query(schema);
-			DataTable dt = InitializeSemanticColumns(schema);
-			PopulateSemanticTable(dt, docs, schema);
-			View.ShowSemanticData(dt);
+			Try(() => 
+				{
+					List<BsonDocument> docs = model.Db.Query(schema);
+					DataTable dt = InitializeSemanticColumns(schema);
+					PopulateSemanticTable(dt, docs, schema);
+					View.ShowSemanticData(dt);
+				});
 		}
 
 		/// <summary>
@@ -82,21 +216,24 @@ namespace WinformExample
 		{
 			DataTable dt = new DataTable();
 			dt.TableName = schema.Name;
-			PopulateSemanticColumns(dt, schema);
+			semanticColumns.Clear();
+			dt.Columns.Add("_id");
+			PopulateSemanticColumns(dt, schema, semanticColumns);
 
 			return dt;
 		}
 
-		protected void PopulateSemanticColumns(DataTable dt, Schema schema)
+		protected void PopulateSemanticColumns(DataTable dt, Schema schema, List<ConcreteType> columns)
 		{
 			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
 				dt.Columns.Add(ct.Alias);
+				columns.Add(ct);
 			}
 
 			foreach (Schema st in schema.Subtypes)
 			{
-				PopulateSemanticColumns(dt, st);
+				PopulateSemanticColumns(dt, st, columns);
 			}
 		}
 
@@ -123,6 +260,7 @@ namespace WinformExample
 			foreach (BsonDocument doc in docs)
 			{
 				DataRow row = dt.NewRow();
+				row["_id"] = doc["_id"];
 				PopulateConcreteTypes(row, doc, schema);
 				dt.Rows.Add(row);
 			}
@@ -166,6 +304,18 @@ namespace WinformExample
 			sd.Insert(schema, BsonDocument.Parse("{month: 10, monthName: 'October', monthAbbr: 'Oct'}"));
 			sd.Insert(schema, BsonDocument.Parse("{month: 11, monthName: 'November', monthAbbr: 'Nov'}"));
 			sd.Insert(schema, BsonDocument.Parse("{month: 12, monthName: 'December', monthAbbr: 'Dec'}"));
+		}
+
+		protected void Try(Action activity)
+		{
+			try
+			{
+				activity();
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message + "\r\n" + ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
 		}
 	}
 }

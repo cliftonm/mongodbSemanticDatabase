@@ -127,9 +127,15 @@ namespace Clifton.MongoSemanticDatabase
 			return InternalInsert(schema, doc);
 		}
 
-		public string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew)
+
+		/// <summary>
+		/// Updates the semantic type.  If the root type has concrete fields, then the root ID is not necessary.
+		/// If the root type is abstract, then the root ID must be supplied.
+		/// The updated record _id is returned.
+		/// </summary>
+		public string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew, string rootId = null)
 		{
-			return Update(schema, docOriginal, docNew, null);
+			return InternalUpdate(schema, docOriginal, docNew, rootId);
 		}
 
 		public void Delete(Schema schema, BsonDocument doc)
@@ -137,11 +143,19 @@ namespace Clifton.MongoSemanticDatabase
 			InternalDelete(schema, doc);
 		}
 
+		/// <summary>
+		/// Returns a flattened view of the schema hierarchy.  The _id field is the ID of the root type.
+		/// </summary>
 		public List<BsonDocument> Query(Schema schema, string id = null)
+		{
+			return Query(schema, id, true);
+		}
+
+		protected List<BsonDocument> Query(Schema schema, string id, bool withId)
 		{
 			List<BsonDocument> records = new List<BsonDocument>();
 
-			records = GetAll(schema.Name, id);
+			records = GetAll(schema.Name, id, withId);
 
 			foreach (BsonDocument record in records)
 			{
@@ -157,7 +171,7 @@ namespace Clifton.MongoSemanticDatabase
 					{
 						string childId = record[childIdName].ToString();
 						record.Remove(childIdName);
-						List<BsonDocument> childRecords = Query(subtype, childId);
+						List<BsonDocument> childRecords = Query(subtype, childId, false);
 
 						// TODO: Assert that childRecords <= 1, and we know only one child record exists because we don't allow duplicates.
 						if (childRecords.Count == 1)
@@ -279,11 +293,18 @@ namespace Clifton.MongoSemanticDatabase
 		/// <summary>
 		/// Returns all but the _id field of a MongoDB collection.
 		/// </summary>
-		public List<BsonDocument> GetAll(string collectionName, string id = null)
+		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false)
 		{
 			BsonDocument filter = GetIdFilterDocument(id);
 			// Empty filter, and remove the _id from the set if returned fields.
-			List<BsonDocument> docs = db.GetCollection<BsonDocument>(collectionName).Find(filter).Project("{_id:0}").ToList();
+			var query = db.GetCollection<BsonDocument>(collectionName).Find(filter);
+
+			if (!withId)
+			{
+				query = query.Project("{_id:0}");
+			}
+
+			List<BsonDocument> docs = query.ToList();
 
 			return docs;
 		}
@@ -469,6 +490,20 @@ namespace Clifton.MongoSemanticDatabase
 			return id;
 		}
 
+		protected bool ConcreteTypesChanged(Schema schema, BsonDocument docOriginal, BsonDocument docNew)
+		{
+			BsonDocument originalObject = GetConcreteObjects(schema, docOriginal);
+			BsonDocument newObject = GetConcreteObjects(schema, docNew);
+
+			return originalObject != newObject;
+		}
+
+		// TODO: Test updating only one subtype where a type has multiple subtypes of the same type.
+		// Example: Update firstName only for Person.
+		// Test that this resolves reference counting and optional insert if the reference count was > 1
+
+		// TODO: Test that updating only one field does not trigger a change in reference counts of the non-changed field, or an insert of the non-changed field.
+
 		/// <summary>
 		/// The complete set of values for the original semantic type must be provided as well as the new values -- we can't actually just update a value based on some primary key.
 		/// If there are no other references to the semantic type, the concrete types can simply be updated.
@@ -478,23 +513,41 @@ namespace Clifton.MongoSemanticDatabase
 		///		the super-type's "foreign key" reference must be updated
 		///		this process needs to recurse upwards through the hierarchy
 		/// </summary>
-		protected string Update(Schema schema, BsonDocument docOriginal, BsonDocument docNew, string schemaId)
+		protected string InternalUpdate(Schema schema, BsonDocument docOriginal, BsonDocument docNew, string schemaId)
 		{
 			string id = null;
 
 			if (schema.IsConcreteType)
 			{
-				int refCount = GetRefCount(schema.Name, docOriginal, out id);
-
-				if (refCount == 1)
+				if (ConcreteTypesChanged(schema, docOriginal, docNew))
 				{
-					Update(schema.Name, id, docOriginal, docNew);
+					int refCount;
+
+					if (schemaId == null)
+					{
+						refCount = GetRefCount(schema.Name, docOriginal, out id);
+					}
+					else
+					{
+						refCount = GetRefCount(schema.Name, schemaId);
+						id = schemaId;
+					}
+
+					if (refCount == 1)
+					{
+						Update(schema.Name, id, docOriginal, docNew);
+					}
+					else
+					{
+						// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
+
+						DecrementRefCount(schema.Name, id, refCount);
+						id = InternalInsert(schema, docNew);
+					}
 				}
 				else
 				{
-					// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
-					DecrementRefCount(schema.Name, id, refCount);
-					id = InternalInsert(schema, docNew);
+					id = schemaId;
 				}
 			}
 			else
@@ -755,6 +808,14 @@ namespace Clifton.MongoSemanticDatabase
 			return refCount;
 		}
 
+		protected int GetRefCount(string collectionName, string id)
+		{
+			BsonDocument record = GetAll(collectionName, id)[0];
+			int refCount = record.Elements.Single(el => el.Name == "_ref").Value.ToInt32();
+
+			return refCount;
+		}
+
 		protected string InsertRecord(Schema schema, BsonDocument doc)
 		{
 			db.GetCollection<BsonDocument>(schema.Name).InsertOne(doc);
@@ -827,7 +888,7 @@ namespace Clifton.MongoSemanticDatabase
 				// The subtype record id is:
 				string originalSubtypeId = originalFullRecord[subtype.Name + "Id"].ToString();
 				// Returns either the same subtype ID or the same if no changes were made.
-				string newSubtypeId = Update(subtype, currentOriginalSubdoc, newSubdoc, originalSubtypeId);
+				string newSubtypeId = InternalUpdate(subtype, currentOriginalSubdoc, newSubdoc, originalSubtypeId);
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
 				currentNewObject.Add(subtype.Name + "Id", new ObjectId(newSubtypeId));

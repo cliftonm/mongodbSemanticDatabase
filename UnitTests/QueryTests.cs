@@ -69,12 +69,12 @@ namespace UnitTests
 			List<BsonDocument> records = sd.Query(schema);
 
 			Assert.IsTrue(records.Count == 1);
-			Assert.IsTrue(records[0].ToString().Contains("{ \"firstName\" : \"Marc\", \"lastName\" : \"Clifton\" }"));
+			Assert.IsTrue(records[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\""));
 
 			// Tests that name, which is referenced by firstname and lastname, generates the correct server-side query.
 			records = sd.QueryServerSide(schema);
 			Assert.IsTrue(records.Count == 1);
-			Assert.IsTrue(records[0].ToString().Contains("{ \"firstName\" : \"Marc\", \"lastName\" : \"Clifton\" }"));
+			Assert.IsTrue(records[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\""));
 		}
 	}
 }

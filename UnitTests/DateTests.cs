@@ -44,7 +44,7 @@ namespace UnitTests
 
 			List<BsonDocument> docs = sd.Query(schema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString()=="{ \"month\" : 8, \"monthName\" : \"August\" }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"month\" : 8, \"monthName\" : \"August\""));
 
 			docs = sd.QueryServerSide(schema);
 			Assert.IsTrue(docs.Count == 0, "Partial semantic instance expected to fail when the $unwind aggregator encounters an empty array.");
@@ -64,11 +64,11 @@ namespace UnitTests
 
 			List<BsonDocument> docs = sd.Query(schema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString() == "{ \"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962 }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962"));
 
 			docs = sd.QueryServerSide(schema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString() == "{ \"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962 }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"month\" : 8, \"monthName\" : \"August\", \"day\" : 19, \"year\" : 1962"));
 		}
 
 		[TestMethod]

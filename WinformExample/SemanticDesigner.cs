@@ -10,17 +10,26 @@ namespace WinformExample
 {
 	public partial class SemanticDesigner : Form
 	{
+		public bool HasSelectedSemanticRow { get { return dgvSemanticData.SelectedRows.Count != 0; } }
+		public DataRow SelectedSemanticRow { get { return ((DataView)dgvSemanticData.DataSource)[dgvSemanticData.SelectedRows[0].Index].Row; } }
+
+		public int SelectedSemanticRowIndex { get { return HasSelectedSemanticRow ? dgvSemanticData.SelectedRows[0].Index : -2; } }
+		public int NumSemanticRows { get { return ((DataView)dgvSemanticData.DataSource).Table.Rows.Count; } }
+
 		protected Model model;
 		protected Controller controller;
 
 		public SemanticDesigner(Model model, Controller controller)
 		{
 			this.model = model;
+			this.controller = controller;
 			InitializeComponent();
 			InitializeSchemaView();
-			tvTypes.ExpandAll();
+			// tvTypes.ExpandAll();
+			tvTypes.Nodes[0].Expand();
 
 			tvTypes.AfterSelect += controller.AfterSelectEvent;
+			dgvSemanticData.SelectionChanged += controller.SelectionChangedEvent;
 		}
 
 		public void ShowCollectionData(DataTable dt)
@@ -34,14 +43,29 @@ namespace WinformExample
 		{
 			DataView dv = new DataView(dt);
 			dgvSemanticData.DataSource = dv;
+			dgvSemanticData.Columns[0].Visible = false;			// Hide the ID field.
 			lblSemanticType.Text = "Semantic Type: " + dt.TableName;
+			dt.RowChanged += controller.RowChangedEvent;
+			dt.TableNewRow += controller.NewRowEvent;
+			dt.RowDeleted += controller.RowDeletedEvent;
+		}
+
+		public void Log(string msg)
+		{
+			string hms = DateTime.Now.ToString("HH:mm:ss");
+			tbLog.AppendText("\r\n" + hms + " " + msg);
+		}
+
+		public DataRow GetSemanticRowAt(int idx)
+		{
+			return ((DataView)dgvSemanticData.DataSource)[idx].Row;
 		}
 
 		protected void InitializeSchemaView()
 		{
 			TreeNode root = tvTypes.Nodes.Add("Semantic Schema");
 
-			foreach (Schema schema in model.Schemata)
+			foreach (Schema schema in model.Schemata.OrderBy(s => s.Name))
 			{
 				root.Nodes.Add(CreateSchemaNode(schema));
 			}
