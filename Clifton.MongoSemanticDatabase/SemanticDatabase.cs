@@ -285,9 +285,20 @@ namespace Clifton.MongoSemanticDatabase
 
 		public string ShowPlan(Schema schema)
 		{
+			string ret;
 			List<string> plan = GetPlan(schema);
 
-			return "db." + schema.Name + ".aggregate(" + String.Join("\r\n", plan) + ")";
+			// If there are no subtypes, then we don't have an aggregation, we just have a basic collection query.
+			if (plan.Count == 0)
+			{
+				ret = "db." + schema.Name + ".find()";			// TODO: Add projection!
+			}
+			else
+			{
+				ret = "db." + schema.Name + ".aggregate(" + String.Join("\r\n", plan) + ")";
+			}
+
+			return ret;
 		}
 
 		/// <summary>
@@ -326,8 +337,12 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			List<string> projections = new List<string>();
 			List<string> pipeline = BuildQueryPipeline(schema, parentName, projections);
-			pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
-			pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+
+			if (pipeline.Count > 0)
+			{
+				pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
+				pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+			}
 
 			return pipeline;
 		}
@@ -440,6 +455,7 @@ namespace Clifton.MongoSemanticDatabase
 				}
 				else
 				{
+					// This preserves reference ID's.
 					ret[el.Name] = el.Value;
 				}
 			}
@@ -537,7 +553,29 @@ namespace Clifton.MongoSemanticDatabase
 
 					if (refCount == 1)
 					{
-						Update(schema, id, docOriginal, docNew);
+						// Determine if another entry matching the concrete types exist.
+						// If so, increment the ref count of that record and return it's ID.
+						// We can then delete the record with the current id, as it is no longer referenced.
+						string existingRecId;
+						BsonDocument currentNewObject = DeAliasDocument(schema, GetConcreteObjects(schema, docNew));
+						int existingRecRefCount; // = GetRefCount(schema.Name, currentNewObject, out existingRecId);
+						
+
+						// if (existingRecRefCount != 0)
+						if (IsDuplicate(schema.Name, currentNewObject, out existingRecId, out existingRecRefCount))
+						{
+							// Anything to do?
+							if (id != existingRecId)
+							{
+								IncrementRefCount(schema.Name, existingRecId, existingRecRefCount);
+								Delete(schema.Name, id);
+								id = existingRecId;
+							}
+						}
+						else
+						{
+							Update(schema, id, docOriginal, docNew);
+						}
 					}
 					else
 					{
@@ -626,7 +664,30 @@ namespace Clifton.MongoSemanticDatabase
 
 					if (refCount == 1)
 					{
-						Update(schema, id, record, currentNewObject);
+						// Determine if another entry exists matching the concrete type for this schema plus the subtype references.
+						// Notice the variance with the concrete update -- here we include subtype id's as well.
+						// If so, increment the ref count of that record and return it's ID.
+						// We can then delete the record with the current id, as it is no longer referenced.
+						
+						// currentNewObject includes the concrete objects + our subtype id's, as inserted by UpdateRecurseIntoSubTypes
+						string existingRecId;
+						int existingRecRefCount;
+						BsonDocument dealiasedCurrentNewObject = DeAliasDocument(schema, currentNewObject);
+
+						if (IsDuplicate(schema.Name, dealiasedCurrentNewObject, out existingRecId, out existingRecRefCount))
+						{
+							// Is this the same record?
+							if (id != existingRecId)
+							{
+								IncrementRefCount(schema.Name, existingRecId, existingRecRefCount);
+								Delete(schema.Name, id);
+								id = existingRecId;
+							}
+						}
+						else
+						{
+							Update(schema, id, record, currentNewObject);
+						}
 					}
 					else
 					{

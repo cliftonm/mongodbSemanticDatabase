@@ -30,12 +30,14 @@
 		{
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.tvTypes = new System.Windows.Forms.TreeView();
+			this.tbLog = new System.Windows.Forms.TextBox();
+			this.label1 = new System.Windows.Forms.Label();
 			this.dgvSemanticData = new System.Windows.Forms.DataGridView();
 			this.lblSemanticType = new System.Windows.Forms.Label();
 			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
 			this.lblCollectionName = new System.Windows.Forms.Label();
-			this.label1 = new System.Windows.Forms.Label();
-			this.tbLog = new System.Windows.Forms.TextBox();
+			this.label2 = new System.Windows.Forms.Label();
+			this.tbPlan = new System.Windows.Forms.TextBox();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
@@ -56,6 +58,8 @@
 			// 
 			// splitContainer1.Panel2
 			// 
+			this.splitContainer1.Panel2.Controls.Add(this.tbPlan);
+			this.splitContainer1.Panel2.Controls.Add(this.label2);
 			this.splitContainer1.Panel2.Controls.Add(this.tbLog);
 			this.splitContainer1.Panel2.Controls.Add(this.label1);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvSemanticData);
@@ -75,6 +79,26 @@
 			this.tvTypes.Name = "tvTypes";
 			this.tvTypes.Size = new System.Drawing.Size(236, 732);
 			this.tvTypes.TabIndex = 0;
+			// 
+			// tbLog
+			// 
+			this.tbLog.Location = new System.Drawing.Point(18, 555);
+			this.tbLog.Multiline = true;
+			this.tbLog.Name = "tbLog";
+			this.tbLog.ReadOnly = true;
+			this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+			this.tbLog.Size = new System.Drawing.Size(405, 165);
+			this.tbLog.TabIndex = 5;
+			this.tbLog.WordWrap = false;
+			// 
+			// label1
+			// 
+			this.label1.AutoSize = true;
+			this.label1.Location = new System.Drawing.Point(15, 537);
+			this.label1.Name = "label1";
+			this.label1.Size = new System.Drawing.Size(31, 15);
+			this.label1.TabIndex = 4;
+			this.label1.Text = "Log:";
 			// 
 			// dgvSemanticData
 			// 
@@ -120,25 +144,25 @@
 			this.lblCollectionName.TabIndex = 0;
 			this.lblCollectionName.Text = "Collection:";
 			// 
-			// label1
+			// label2
 			// 
-			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(15, 537);
-			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(31, 15);
-			this.label1.TabIndex = 4;
-			this.label1.Text = "Log:";
+			this.label2.AutoSize = true;
+			this.label2.Location = new System.Drawing.Point(443, 536);
+			this.label2.Name = "label2";
+			this.label2.Size = new System.Drawing.Size(35, 15);
+			this.label2.TabIndex = 6;
+			this.label2.Text = "Plan:";
 			// 
-			// tbLog
+			// tbPlan
 			// 
-			this.tbLog.Location = new System.Drawing.Point(18, 555);
-			this.tbLog.Multiline = true;
-			this.tbLog.Name = "tbLog";
-			this.tbLog.ReadOnly = true;
-			this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-			this.tbLog.Size = new System.Drawing.Size(405, 165);
-			this.tbLog.TabIndex = 5;
-			this.tbLog.WordWrap = false;
+			this.tbPlan.Location = new System.Drawing.Point(446, 555);
+			this.tbPlan.Multiline = true;
+			this.tbPlan.Name = "tbPlan";
+			this.tbPlan.ReadOnly = true;
+			this.tbPlan.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+			this.tbPlan.Size = new System.Drawing.Size(405, 165);
+			this.tbPlan.TabIndex = 7;
+			this.tbPlan.WordWrap = false;
 			// 
 			// SemanticDesigner
 			// 
@@ -169,6 +193,8 @@
 		private System.Windows.Forms.Label lblSemanticType;
 		private System.Windows.Forms.TextBox tbLog;
 		private System.Windows.Forms.Label label1;
+		private System.Windows.Forms.TextBox tbPlan;
+		private System.Windows.Forms.Label label2;
 	}
 }
 

@@ -143,5 +143,19 @@ namespace UnitTests
 			Assert.IsTrue(bson[1].ToString().Contains("\"_ref\" : 1"));
 			Assert.IsTrue(bson[2].ToString().Contains("\"_ref\" : 1"));
 		}
+
+		[TestMethod]
+		public void DuplicateReferenceInsertTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema schema = Helpers.CreatePersonSchema();
+
+			sd.Insert(schema, BsonDocument.Parse("{firstName: 'Marc', lastName: 'Clifton'}"));
+			sd.Insert(schema, BsonDocument.Parse("{firstName: 'Ian', lastName: 'Clifton'}"));
+
+			List<BsonDocument> docs = sd.GetAll("name");
+			Assert.IsTrue(docs.Count == 3);			// Clifton should be referenced twice.
+		}
 	}
 }

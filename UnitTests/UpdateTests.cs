@@ -160,5 +160,36 @@ namespace UnitTests
 			Assert.IsTrue(bson.Count == 1);
 			Assert.IsTrue(bson[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\""));
 		}
+
+		/// <summary>
+		/// Test updating a person name, where first name and last name share the same subtype "name" and the ref count on one of the name records is 2
+		/// </summary>
+		[TestMethod]
+		public void UpdateWithCommonSubTypeMultipleReferenceTest()
+		{
+			SemanticDatabase sd = Helpers.CreateCleanDatabase();
+			Assert.IsTrue(sd.GetCollections().Count == 0, "Collection should be 0 length.");
+			Schema schema = Helpers.CreatePersonSchema();
+			BsonDocument originalData1 = BsonDocument.Parse("{firstName: '1', lastName: '2'}");
+			BsonDocument originalData2 = BsonDocument.Parse("{firstName: '2', lastName: '3'}");
+			string recordId1 = sd.Insert(schema, originalData1);
+			string recordId2 = sd.Insert(schema, originalData2);	// "2" is ref'd twice.
+			
+			BsonDocument newData1 = BsonDocument.Parse("{firstName: 'Marc', lastName: 'Clifton'}");
+			sd.Update(schema, originalData1, newData1, recordId1);
+			BsonDocument newData2 = BsonDocument.Parse("{firstName: 'Ian', lastName: 'Clifton'}");
+			sd.Update(schema, originalData2, newData2, recordId2);
+			List<BsonDocument> bson;
+			bson = sd.Query(schema);
+			Assert.IsTrue(bson.Count == 2);
+			Assert.IsTrue(bson[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\""));
+			Assert.IsTrue(bson[1].ToString().Contains("\"firstName\" : \"Ian\", \"lastName\" : \"Clifton\""));
+
+			bson = sd.GetAll("name");
+			Assert.IsTrue(bson.Count == 3);				// should only consist of "Ian", "Marc", and "Clifton".
+
+			bson = sd.GetAll("lastName");
+			Assert.IsTrue(bson.Count == 1);				// Only one "Clifton"
+		}
 	}
 }

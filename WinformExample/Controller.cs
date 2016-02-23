@@ -17,7 +17,9 @@ namespace WinformExample
 		protected List<ConcreteType> semanticColumns;
 		protected Dictionary<string, string> currentValues;
 		protected Schema currentSchema;
-		public string currentId;
+		protected int currentRowIdx = -1;
+		protected string currentId;
+		protected bool ignoreUpdate;
 		protected DataRow newRow;
 
 		public Controller(Model model)
@@ -51,6 +53,7 @@ namespace WinformExample
 					{
 						currentSchema = (Schema)item;
 						string plan = model.Db.ShowPlan(currentSchema);
+						View.UpdatePlan(plan);
 						ResetBuffers();
 						ShowCollection(currentSchema);
 						ShowSemanticData(currentSchema);
@@ -74,28 +77,39 @@ namespace WinformExample
 
 		public void RowChangedEvent(object sender, DataRowChangeEventArgs e)
 		{
-			Try(() =>
-				{
-					View.Log("Row Changed");
+			if (!ignoreUpdate)
+			{
+				Try(() =>
+					{
+						View.Log("Row Changed");
 
-					if (newRow != null)
-					{
-						View.Log("Inserting Record");
-						BsonDocument doc = GetDocument(newRow);
-						View.Log(doc.ToString());
-						model.Db.Insert(currentSchema, doc);
-						newRow = null;
-					}
-					else
-					{
-						View.Log("Updating Record");
-						BsonDocument docOld = GetDocument(currentValues);
-						BsonDocument docNew = GetDocument(View.SelectedSemanticRow);
-						View.Log("  from: " + docOld.ToString());
-						View.Log("  to: " + docNew.ToString());
-						model.Db.Update(currentSchema, docOld, docNew, currentId);
-					}
-				});
+						if (newRow != null)
+						{
+							View.Log("Inserting Record");
+							BsonDocument doc = GetDocument(newRow);
+							View.Log(doc.ToString());
+							string id = model.Db.Insert(currentSchema, doc);
+							ignoreUpdate = true;			// updating the _id field causes a RowChanged event!
+							newRow["_id"] = id;
+							ignoreUpdate = false;
+							currentId = id;
+							newRow = null;
+						}
+						else
+						{
+							View.Log("Updating Record");
+							BsonDocument docOld = GetDocument(currentValues);
+							BsonDocument docNew = GetDocument(View.SelectedSemanticRow);
+							View.Log("  from: " + docOld.ToString());
+							View.Log("  to: " + docNew.ToString());
+							string id = model.Db.Update(currentSchema, docOld, docNew, currentId);
+							ignoreUpdate = true;			// updating the _id field causes a RowChanged event!
+							View.SelectedSemanticRow["_id"] = id;
+							ignoreUpdate = false;
+							currentId = id;
+						}
+					});
+			}
 		}
 
 		/// <summary>
@@ -106,19 +120,24 @@ namespace WinformExample
 			Try(() =>
 				{
 					int rowIdx = View.SelectedSemanticRowIndex;
-					View.Log("Selection Changed: " + rowIdx);
 
-					if (rowIdx >= 0)
+					if (rowIdx != currentRowIdx)
 					{
-						if (rowIdx < View.NumSemanticRows)
-						{
-							if (newRow != null)
-							{
-								View.Log("Adding row cancelled");
-								newRow = null;
-							}
+						View.Log("Selection Changed: " + rowIdx);
+						currentRowIdx = rowIdx;
 
-							CaptureCurrentValues(View.GetSemanticRowAt(rowIdx));
+						if (rowIdx >= 0)
+						{
+							if (rowIdx < View.NumSemanticRows)
+							{
+								if (newRow != null)
+								{
+									View.Log("Adding row cancelled");
+									newRow = null;
+								}
+
+								CaptureCurrentValues(View.GetSemanticRowAt(rowIdx));
+							}
 						}
 					}
 				});

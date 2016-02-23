@@ -61,6 +61,11 @@ namespace WinformExample
 			return ((DataView)dgvSemanticData.DataSource)[idx].Row;
 		}
 
+		public void UpdatePlan(string plan)
+		{
+			tbPlan.Text = plan;
+		}
+
 		protected void InitializeSchemaView()
 		{
 			TreeNode root = tvTypes.Nodes.Add("Semantic Schema");
