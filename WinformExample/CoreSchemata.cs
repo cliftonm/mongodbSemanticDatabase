@@ -110,7 +110,6 @@ namespace WinformExample
 								[
 									{
 										name: 'name',
-										alias: 'fname',
 										concreteTypes:
 										[
 											{name: 'name', alias: 'firstName', type: 'System.String'}
@@ -124,7 +123,6 @@ namespace WinformExample
 								[
 									{
 										name: 'name',
-										alias: 'lname',
 										concreteTypes:
 										[
 											{name: 'name', alias: 'lastName', type: 'System.String'}
@@ -192,7 +190,7 @@ namespace WinformExample
 								name: 'name',
 								concreteTypes:
 								[
-									{name: 'value', alias: 'streetName', type: 'System.String'}
+									{name: 'name', alias: 'streetName', type: 'System.String'}
 								]
 							}
 						]
@@ -213,9 +211,15 @@ namespace WinformExample
 					},
 					{
 						name: 'city',
-						concreteTypes:
+						subtypes:
 						[
-							{name: 'value', alias: 'city', type: 'System.String'}
+							{
+								name: 'name',
+								concreteTypes:
+								[
+									{name: 'name', alias: 'cityName', type: 'System.String'}
+								]
+							}
 						]
 					},
 					{

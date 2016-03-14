@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\Unit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinformExample", "WinformExample\WinformExample.csproj", "{53725F56-77EF-4024-A95B-5A82E9B18F0F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clifton.Core", "..\Clifton\Clifton.Core\Clifton.Core.csproj", "{54E73707-81C4-4C7F-9739-446C6D7D5FEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clifton.SemanticProcessorService", "..\Clifton\Clifton.Core\Services\Clifton.SemanticProcessorService\Clifton.SemanticProcessorService.csproj", "{B716A014-8C9F-4A24-83A4-ACBAE19C28C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +35,14 @@ Global
 		{53725F56-77EF-4024-A95B-5A82E9B18F0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53725F56-77EF-4024-A95B-5A82E9B18F0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53725F56-77EF-4024-A95B-5A82E9B18F0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54E73707-81C4-4C7F-9739-446C6D7D5FEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54E73707-81C4-4C7F-9739-446C6D7D5FEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54E73707-81C4-4C7F-9739-446C6D7D5FEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54E73707-81C4-4C7F-9739-446C6D7D5FEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B716A014-8C9F-4A24-83A4-ACBAE19C28C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B716A014-8C9F-4A24-83A4-ACBAE19C28C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B716A014-8C9F-4A24-83A4-ACBAE19C28C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B716A014-8C9F-4A24-83A4-ACBAE19C28C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

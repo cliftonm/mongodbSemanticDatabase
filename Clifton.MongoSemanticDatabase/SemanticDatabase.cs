@@ -114,9 +114,16 @@ namespace Clifton.MongoSemanticDatabase
 			}
 		}
 
-		public Schema Associate(Schema schema1, Schema schema2)
+		public Schema GetAssociationSchema(Schema schema1, Schema schema2)
 		{
 			Schema associationSchema = CreateAssociationSchema(schema1, schema2);
+
+			return associationSchema;
+		}
+
+		public Schema Associate(Schema schema1, Schema schema2)
+		{
+			Schema associationSchema = GetAssociationSchema(schema1, schema2);
 			InstantiateSchema(associationSchema);
 
 			return associationSchema;
@@ -331,6 +338,57 @@ namespace Clifton.MongoSemanticDatabase
 			List<CommonType> commonTypes = GetCommonTypes(schemas);
 
 			return commonTypes;
+		}
+
+		/// <summary>
+		/// Returns the schema by selecting a single record instance and recursing over its schema using a specific naming convention.
+		/// This is basically the best we can do to extract a semantic type from a typeless database.
+		/// Aliases and data types are undiscoverable.
+		/// </summary>
+		public Schema DiscoverSchema(string collectionName)
+		{
+			Schema schema = new Schema();
+			schema.Name = collectionName;
+			DiscoverSchema(collectionName, schema);
+
+			return schema;
+		}
+
+		/// <summary>
+		/// Internal recursion over subtypes.
+		/// </summary>
+		protected void DiscoverSchema(string collectionName, Schema schema)
+		{
+			IMongoCollection<BsonDocument> collection = GetCollection(collectionName);
+			HashSet<string> keys = new HashSet<string>();
+			BsonDocument rec = collection.Find(new BsonDocument()).FirstOrDefault();
+
+			if (rec != null)
+			{
+				foreach (string key in rec.Names)
+				{
+					if (key.EndsWith("Id"))
+					{
+						string subtypeName = key.LeftOf("Id");
+						Schema subtypeSchema = new Schema() { Name = subtypeName };
+						DiscoverSchema(subtypeName, subtypeSchema);
+						schema.Subtypes.Add(subtypeSchema);
+					}
+					else
+					{
+						// We don't know of any alias and we don't know the Type for this key.
+						// Ignore _Id and _ref
+						if (!key.BeginsWith("_"))
+						{
+							schema.ConcreteTypes.Add(new ConcreteType() { Name = key });
+						}
+					}
+				}
+			}
+			else
+			{
+				throw new SemanticDatabaseException("There are no records, which are needed to obtain the schema.  Populate at least one record.");
+			}
 		}
 
 		protected List<string> GetPlan(Schema schema, string parentName = "")
@@ -782,6 +840,7 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			var collection = db.GetCollection<BsonDocument>(collectionName);
 			var filter = new BsonDocument("_id", new ObjectId(id));
+			// Or call FindOneAndDelete(filter)
 			collection.DeleteOne(filter);
 		}
 

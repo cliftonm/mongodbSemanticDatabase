@@ -56,8 +56,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssociatedDataView.cs" />
+    <Compile Include="AssociationView.cs" />
+    <Compile Include="Bootstrap.cs" />
+    <Compile Include="CollectionContoller.cs" />
+    <Compile Include="CollectionView.cs" />
     <Compile Include="Controller.cs" />
+    <Compile Include="CreateAssociationDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreateAssociationDlg.Designer.cs">
+      <DependentUpon>CreateAssociationDlg.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LogView.cs" />
+    <Compile Include="PlanView.cs" />
+    <Compile Include="SemanticController.cs" />
     <Compile Include="CoreSchemata.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="Model.cs" />
     <Compile Include="SemanticDesigner.cs">
       <SubType>Form</SubType>
@@ -67,6 +82,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Semantics.cs" />
+    <Compile Include="SemanticView.cs" />
+    <Compile Include="Services.cs" />
+    <EmbeddedResource Include="CreateAssociationDlg.resx">
+      <DependentUpon>CreateAssociationDlg.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="SemanticDesigner.resx">
       <DependentUpon>SemanticDesigner.cs</DependentUpon>
     </EmbeddedResource>
@@ -93,10 +114,21 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clifton\Clifton.Core\Clifton.Core.csproj">
+      <Project>{54e73707-81c4-4c7f-9739-446c6d7d5fea}</Project>
+      <Name>Clifton.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clifton\Clifton.Core\Services\Clifton.SemanticProcessorService\Clifton.SemanticProcessorService.csproj">
+      <Project>{b716a014-8c9f-4a24-83a4-acbae19c28c5}</Project>
+      <Name>Clifton.SemanticProcessorService</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Clifton.MongoSemanticDatabase\Clifton.MongoSemanticDatabase.csproj">
       <Project>{f65daef7-103a-4b4a-8e93-2ab51cbf46c9}</Project>
       <Name>Clifton.MongoSemanticDatabase</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\modules.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

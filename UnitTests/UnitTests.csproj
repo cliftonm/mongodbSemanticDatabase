@@ -74,6 +74,7 @@
     <Compile Include="DeleteTests.cs" />
     <Compile Include="DateTests.cs" />
     <Compile Include="ExplicitAssociationTests.cs" />
+    <Compile Include="SchemaTests.cs" />
     <Compile Include="UpdateTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+
+using Clifton.Core.Semantics;
 
 namespace WinformExample
 {
-	static class Program
+	static partial class Program
 	{
 		/// <summary>
 		/// The main entry point for the application.
@@ -14,15 +13,19 @@ namespace WinformExample
 		[STAThread]
 		static void Main()
 		{
+			Bootstrap();
 			Model model = new Model();
 			model.InitializeCoreSchemata();
 			model.OpenDatabase("marc");
+
+			// General controller.
 			Controller controller = new Controller(model);
 			controller.InstantiateMissingLookups();
+
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
-			SemanticDesigner view = new SemanticDesigner(model, controller);
-			controller.View = view;
+			SemanticDesigner view = new SemanticDesigner(model);
+
 			Application.Run(view);
 		}
 	}

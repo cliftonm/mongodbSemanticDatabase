@@ -10,60 +10,47 @@ namespace WinformExample
 {
 	public partial class SemanticDesigner : Form
 	{
-		public bool HasSelectedSemanticRow { get { return dgvSemanticData.SelectedRows.Count != 0; } }
-		public DataRow SelectedSemanticRow { get { return ((DataView)dgvSemanticData.DataSource)[dgvSemanticData.SelectedRows[0].Index].Row; } }
-
-		public int SelectedSemanticRowIndex { get { return HasSelectedSemanticRow ? dgvSemanticData.SelectedRows[0].Index : -2; } }
-		public int NumSemanticRows { get { return ((DataView)dgvSemanticData.DataSource).Table.Rows.Count; } }
-
 		protected Model model;
-		protected Controller controller;
 
-		public SemanticDesigner(Model model, Controller controller)
+		protected CollectionView collectionView;
+		protected SemanticView semanticView;
+		protected AssociationView assocView;
+
+		protected SemanticController semanticController;
+		protected CollectionController collectionController;
+
+		public SemanticDesigner(Model model)
 		{
 			this.model = model;
-			this.controller = controller;
 			InitializeComponent();
 			InitializeSchemaView();
 			// tvTypes.ExpandAll();
 			tvTypes.Nodes[0].Expand();
 
-			tvTypes.AfterSelect += controller.AfterSelectEvent;
-			dgvSemanticData.SelectionChanged += controller.SelectionChangedEvent;
+			new PlanView(tbPlan);
+			new LogView(tbLog);
+			new AssociatedDataView(lblAssociatedData, dgvAssociationData);
+			assocView = new AssociationView(model, dgvAssociations);
+			semanticView = new SemanticView(lblSemanticType, dgvSemanticData);
+			semanticController = new SemanticController(model);
+
+			tvTypes.AfterSelect += semanticController.AfterSelectEvent;
+			tvTypes.AfterSelect += OnSemanticTypeSelected;
+			dgvSemanticData.SelectionChanged += semanticController.SelectionChangedEvent;
+
+			collectionView = new CollectionView(lblCollectionName, dgvCollectionData);
+			collectionController = new CollectionController(model);
+			tvTypes.AfterSelect += collectionController.AfterSelectEvent;
 		}
 
-		public void ShowCollectionData(DataTable dt)
+		protected void OnSemanticTypeSelected(object sender, TreeViewEventArgs e)
 		{
-			DataView dv = new DataView(dt);
-			dgvCollectionData.DataSource = dv;
-			lblCollectionName.Text = "Collection: " + dt.TableName;
-		}
+			object item = e.Node.Tag;
 
-		public void ShowSemanticData(DataTable dt)
-		{
-			DataView dv = new DataView(dt);
-			dgvSemanticData.DataSource = dv;
-			dgvSemanticData.Columns[0].Visible = false;			// Hide the ID field.
-			lblSemanticType.Text = "Semantic Type: " + dt.TableName;
-			dt.RowChanged += controller.RowChangedEvent;
-			dt.TableNewRow += controller.NewRowEvent;
-			dt.RowDeleted += controller.RowDeletedEvent;
-		}
-
-		public void Log(string msg)
-		{
-			string hms = DateTime.Now.ToString("HH:mm:ss");
-			tbLog.AppendText("\r\n" + hms + " " + msg);
-		}
-
-		public DataRow GetSemanticRowAt(int idx)
-		{
-			return ((DataView)dgvSemanticData.DataSource)[idx].Row;
-		}
-
-		public void UpdatePlan(string plan)
-		{
-			tbPlan.Text = plan;
+			if (item is Schema)
+			{
+				assocView.Update((Schema)item);
+			}
 		}
 
 		protected void InitializeSchemaView()
@@ -129,6 +116,27 @@ namespace WinformExample
 			}
 
 			return ret;
+		}
+
+		private void btnCreate_Click(object sender, EventArgs e)
+		{
+			Schema fromSchema = tvTypes.SelectedNode.Tag as Schema;
+
+			if (fromSchema != null)
+			{
+				Form form = new CreateAssociationDlg(model, fromSchema);
+				form.ShowDialog();
+				assocView.Update(fromSchema);
+			}
+			else
+			{
+				MessageBox.Show("Please select a 'from' collection.", "To Do...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+		}
+
+		private void btnAssociateRecords_Click(object sender, EventArgs e)
+		{
+			
 		}
 	}
 }
