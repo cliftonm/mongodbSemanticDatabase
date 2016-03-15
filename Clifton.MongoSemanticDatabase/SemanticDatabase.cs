@@ -306,6 +306,7 @@ namespace Clifton.MongoSemanticDatabase
 			List<string> projections1;
 			List<string> pipeline2;
 			List<string> projections2;
+			Dictionary<string, int> asList = new Dictionary<string, int>();
 			string schema1Num = "";
 			string schema2Num = "";
 
@@ -315,8 +316,8 @@ namespace Clifton.MongoSemanticDatabase
 				schema2Num = "2";
 			}
 
-			GetPlan(schema1, out pipeline1, out projections1, "", schema1Num);
-			GetPlan(schema2, out pipeline2, out projections2, schema2.Name + schema2Num + ".", schema2Num);
+			GetPlan(schema1, out pipeline1, out projections1, asList, "", schema1Num);
+			GetPlan(schema2, out pipeline2, out projections2, asList, schema2.Name + schema2Num + ".", schema2Num);
 	
 			// schema association join:
 
@@ -506,7 +507,8 @@ namespace Clifton.MongoSemanticDatabase
 		protected List<string> GetPlan(Schema schema, string parentName = "")
 		{
 			List<string> projections = new List<string>();
-			List<string> pipeline = BuildQueryPipeline(schema, parentName, projections);
+			Dictionary<string, int> asList = new Dictionary<string, int>();
+			List<string> pipeline = BuildQueryPipeline(schema, parentName, projections, asList);
 
 			if (pipeline.Count > 0)
 			{
@@ -517,10 +519,10 @@ namespace Clifton.MongoSemanticDatabase
 			return pipeline;
 		}
 
-		protected void GetPlan(Schema schema, out List<string> pipeline, out List<string> projections, string parentName = "", string schemaNum = "")
+		protected void GetPlan(Schema schema, out List<string> pipeline, out List<string> projections, Dictionary<string, int> asList, string parentName = "", string schemaNum = "")
 		{
 			projections = new List<string>();
-			pipeline = BuildQueryPipeline(schema, parentName, projections, schemaNum);
+			pipeline = BuildQueryPipeline(schema, parentName, projections, asList, schemaNum);
 		}
 
 		protected List<CommonType> GetCommonTypes(Schema[] schemas)
@@ -956,7 +958,7 @@ namespace Clifton.MongoSemanticDatabase
 			collection.DeleteOne(filter);
 		}
 
-		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections, string schemaNum = "")
+		protected List<string> BuildQueryPipeline(Schema schema, string parentName, List<string> projections, Dictionary<string, int> asList, string schemaNum = "")
 		{
 			List<string> pipeline = new List<string>();
 
@@ -969,14 +971,29 @@ namespace Clifton.MongoSemanticDatabase
 					pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
 				}
 
-				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{3}{4}'}} }},", 
+				// This handles multiple occurrances of the same subtype, aliasing them so the unwrap and projection references the correct record.
+				string asName = subtype.Alias + schemaNum;
+				string aliasedAsName = asName;
+
+				if (!asList.ContainsKey(asName))
+				{
+					asList[asName] = 0;
+				}
+				else
+				{
+					int n = asList[asName];
+					++n;
+					asList[asName] = n;
+					aliasedAsName = asName + n;
+				}
+
+				pipeline.Add(String.Format("{{$lookup: {{from: '{0}', localField:'{2}{1}', foreignField: '_id', as: '{3}'}} }},", 
 					subtype.Name, 
 					subtype.Name + "Id", 
 					parentName, 
-					subtype.Alias, 
-					schemaNum));
-				pipeline.Add(String.Format("{{$unwind: '${0}{1}'}}", subtype.Alias, schemaNum));
-				List<string> subpipeline = BuildQueryPipeline(subtype, subtype.Alias + schemaNum + ".", projections, schemaNum);
+					aliasedAsName));
+				pipeline.Add(String.Format("{{$unwind: '${0}'}}", aliasedAsName));
+				List<string> subpipeline = BuildQueryPipeline(subtype, aliasedAsName + ".", projections, asList, schemaNum);
 
 				if (subpipeline.Count > 0)
 				{
