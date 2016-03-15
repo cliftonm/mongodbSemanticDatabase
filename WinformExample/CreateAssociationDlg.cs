@@ -11,8 +11,6 @@ namespace WinformExample
 	public partial class CreateAssociationDlg : Form
 	{
 		protected Model model;
-		protected bool HasSelectedRow { get { return dgvTypes.SelectedRows.Count != 0; } }
-		protected DataRow SelectedRow { get { return ((DataView)dgvTypes.DataSource)[dgvTypes.SelectedRows[0].Index].Row; } }
 		protected Schema fromSchema;
 
 		public CreateAssociationDlg(Model model, Schema fromSchema)
@@ -25,10 +23,10 @@ namespace WinformExample
 
 		protected void btnCreate_Click(object sender, EventArgs e)
 		{
-			if (HasSelectedRow)
+			if (dgvTypes.HasSelectedRow())
 			{
-				string name = SelectedRow[0].ToString();
-				Schema toSchema = model.Schemata.FirstOrDefault(s => s.Name == name);
+				string name = dgvTypes.SelectedRow()[0].ToString();
+				Schema toSchema = model.GetSchema(name);
 
 				if (toSchema == null)
 				{

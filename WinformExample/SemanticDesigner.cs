@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
+using MongoDB.Bson;
+
+using Clifton.Core.ExtensionMethods;
+using Clifton.Core.Semantics;
 using Clifton.MongoSemanticDatabase;
 
 namespace WinformExample
 {
-	public partial class SemanticDesigner : Form
+	public partial class SemanticDesigner : Form, IReceptor
 	{
 		protected Model model;
 
 		protected CollectionView collectionView;
 		protected SemanticView semanticView;
 		protected AssociationView assocView;
+		protected AssociatedDataView assocDataView;
 
 		protected SemanticController semanticController;
 		protected CollectionController collectionController;
@@ -29,7 +35,7 @@ namespace WinformExample
 
 			new PlanView(tbPlan);
 			new LogView(tbLog);
-			new AssociatedDataView(lblAssociatedData, dgvAssociationData);
+			assocDataView = new AssociatedDataView(lblAssociatedData, dgvAssociationData);
 			assocView = new AssociationView(model, dgvAssociations);
 			semanticView = new SemanticView(lblSemanticType, dgvSemanticData);
 			semanticController = new SemanticController(model);
@@ -41,6 +47,60 @@ namespace WinformExample
 			collectionView = new CollectionView(lblCollectionName, dgvCollectionData);
 			collectionController = new CollectionController(model);
 			tvTypes.AfterSelect += collectionController.AfterSelectEvent;
+
+			Program.serviceManager.Get<ISemanticProcessor>().Register<AssociationViewMembrane>(this);
+		}
+
+		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_Associations assoc)
+		{
+			// TODO: Implement reverse association button list.
+			this.BeginInvoke(() =>
+				{
+					RemoveAssociationButtons();
+					CreateAssociationButtons(assoc.ForwardSchemaNames);
+				});
+		}
+
+		protected void RemoveAssociationButtons()
+		{
+			gbNavigate.Controls.Clear();
+		}
+
+		protected void CreateAssociationButtons(List<string> names)
+		{
+			int n = 0;
+			List<string> assocWith = names.Select(name => name.RightOf("_")).OrderBy(name => name).ToList();
+
+			foreach (string name in assocWith)
+			{
+				Button btn = new Button();
+				btn.Location = new Point(10, 15 + n * 30);
+				btn.Size = new Size(gbNavigate.Width - 20, 25);
+				btn.Text = name;
+				btn.Tag = names[n];
+				btn.Click += OnNavigation;
+				gbNavigate.Controls.Add(btn);
+				++n;
+			}
+		}
+
+		protected void OnNavigation(object sender, EventArgs e)
+		{
+			string assocName = (string)((Button)sender).Tag;
+			string fromSchemaName = assocName.LeftOf("_");
+			string toSchemaName = assocName.RightOf("_");
+			Schema fromSchema = model.GetSchema(fromSchemaName);
+			Schema toSchema = model.GetSchema(toSchemaName);
+			// Schema assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
+
+			// TODO: Duplicate code, sort of (notice use of assocSchema and toSchema)
+			BsonDocument filter = new BsonDocument(fromSchemaName + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
+			// List<BsonDocument> docs = model.Db.Query(assocSchema, filter);
+			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(fromSchema, toSchema, filter);
+			List<ConcreteType> semanticColumns;
+			DataTable dt = DataHelpers.InitializeSemanticColumns(toSchema, out semanticColumns);
+			DataHelpers.PopulateSemanticTable(dt, docs, toSchema);
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = toSchema; });
 		}
 
 		protected void OnSemanticTypeSelected(object sender, TreeViewEventArgs e)
@@ -134,9 +194,30 @@ namespace WinformExample
 			}
 		}
 
+		// TODO: Need to handle reverse associations.
 		private void btnAssociateRecords_Click(object sender, EventArgs e)
 		{
-			
+			if (semanticView.HasSelectedRow && assocDataView.HasSelectedRow)
+			{
+				DataRow fromRow = semanticView.SelectedRow;
+				DataRow toRow = assocDataView.SelectedRow;
+				string fromId = fromRow["_id"].ToString();
+				string toId = toRow["_id"].ToString();
+				Schema fromSchema = semanticView.Schema;
+				Schema toSchema = assocDataView.Schema;
+				Schema assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
+
+				string fwdName = fromSchema.Name;
+				string revName = toSchema.Name;
+				string fwdDescr = tbFwdAssoc.Text;
+				string revDescr = tbRevAssoc.Text;
+
+				BsonDocument doc = new BsonDocument(fwdName + "Id", new ObjectId(fromId));
+				doc.Add(revName + "Id", new ObjectId(toId));
+				doc.Add("forwardAssociationName", tbFwdAssoc.Text);
+				doc.Add("reverseAssociationName", tbRevAssoc.Text);
+				model.Db.Insert(assocSchema, doc);
+			}
 		}
 	}
 }

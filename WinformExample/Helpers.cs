@@ -42,6 +42,8 @@ namespace WinformExample
 			}
 		}
 
+		// Extension Helpers:
+
 		/// <summary>
 		/// Asynchronous invoke on application thread.  Will return immediately unless invocation is not required.
 		/// </summary>
@@ -72,6 +74,26 @@ namespace WinformExample
 			{
 				action();
 			}
+		}
+
+		public static bool HasSelectedRow(this DataGridView view)
+		{
+			return view.SelectedRows.Count != 0;
+		}
+
+		public static DataRow SelectedRow(this DataGridView view)
+		{
+			return ((DataView)view.DataSource)[view.SelectedRows[0].Index].Row;
+		}
+
+		public static int SelectedRowIndex(this DataGridView view)
+		{
+			return view.HasSelectedRow() ? view.SelectedRows[0].Index : -2;
+		}
+
+		public static int NumRows(this DataGridView view)
+		{
+			return ((DataView)view.DataSource).Table.Rows.Count;
 		}
 	}
 }

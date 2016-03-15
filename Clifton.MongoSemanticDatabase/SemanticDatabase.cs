@@ -158,11 +158,16 @@ namespace Clifton.MongoSemanticDatabase
 			return Query(schema, id, true);
 		}
 
-		protected List<BsonDocument> Query(Schema schema, string id, bool withId)
+		public List<BsonDocument> Query(Schema schema, BsonDocument filter)
+		{
+			return Query(schema, null, true, filter);
+		}
+
+		protected List<BsonDocument> Query(Schema schema, string id, bool withId, BsonDocument filter = null)
 		{
 			List<BsonDocument> records = new List<BsonDocument>();
 
-			records = GetAll(schema.Name, id, withId);
+			records = GetAll(schema.Name, id, withId, filter);
 
 			foreach (BsonDocument record in records)
 			{
@@ -213,7 +218,7 @@ namespace Clifton.MongoSemanticDatabase
 			return records;
 		}
 
-		public List<BsonDocument> QueryAssociationServerSide(Schema schema1, Schema schema2)
+		public List<BsonDocument> QueryAssociationServerSide(Schema schema1, Schema schema2, BsonDocument filter = null)
 		{
 			List<string> fullPipeline = new List<string>();
 			List<string> pipeline1;
@@ -277,6 +282,8 @@ namespace Clifton.MongoSemanticDatabase
 			allProjections.AddRange(projections2);
 			allProjections.Add("'fwdAssocName':'$fanName.name'");
 			allProjections.Add("'revAssocName':'$ranName.name'");
+			allProjections.Add("'" + schema1.Name + schema1Num + "Id' : '$" + assocCollectionName + "." + schema1.Name + schema1Num + "Id'");
+			allProjections.Add("'" + schema2.Name + schema2Num + "Id' : '$" + assocCollectionName + "." + schema2.Name + schema2Num + "Id'");
 
 			fullPipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", allProjections)));
 
@@ -285,6 +292,12 @@ namespace Clifton.MongoSemanticDatabase
 			var collection = db.GetCollection<BsonDocument>(schema1.Name);
 			var aggr = collection.Aggregate();
 			fullPipeline.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
+
+			if (filter != null)
+			{
+				aggr = aggr.AppendStage<BsonDocument>("{$match: "+filter.ToString()+"}");
+			}
+
 			List<BsonDocument> records = aggr.ToList();
 
 			return records;
@@ -311,9 +324,18 @@ namespace Clifton.MongoSemanticDatabase
 		/// <summary>
 		/// Returns all but the _id field of a MongoDB collection.
 		/// </summary>
-		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false)
+		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false, BsonDocument filter = null)
 		{
-			BsonDocument filter = GetIdFilterDocument(id);
+			// Filter by ID or a filter specified by the caller.
+			if (id != null)
+			{
+				filter = GetIdFilterDocument(id);
+			}
+			else if (filter == null)
+			{
+				filter = new BsonDocument();
+			}
+
 			// Empty filter, and remove the _id from the set if returned fields.
 			var query = db.GetCollection<BsonDocument>(collectionName).Find(filter);
 

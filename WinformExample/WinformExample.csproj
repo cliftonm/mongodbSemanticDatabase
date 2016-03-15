@@ -68,6 +68,7 @@
     <Compile Include="CreateAssociationDlg.Designer.cs">
       <DependentUpon>CreateAssociationDlg.cs</DependentUpon>
     </Compile>
+    <Compile Include="DataHelpers.cs" />
     <Compile Include="LogView.cs" />
     <Compile Include="PlanView.cs" />
     <Compile Include="SemanticController.cs" />

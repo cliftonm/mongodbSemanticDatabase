@@ -30,6 +30,13 @@
 		{
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.tvTypes = new System.Windows.Forms.TreeView();
+			this.tbRevAssoc = new System.Windows.Forms.TextBox();
+			this.textBox1 = new System.Windows.Forms.TextBox();
+			this.label5 = new System.Windows.Forms.Label();
+			this.tbFwdAssoc = new System.Windows.Forms.Label();
+			this.btnAssociateRecords = new System.Windows.Forms.Button();
+			this.dgvAssociationData = new System.Windows.Forms.DataGridView();
+			this.lblAssociatedData = new System.Windows.Forms.Label();
 			this.btnCreate = new System.Windows.Forms.Button();
 			this.dgvAssociations = new System.Windows.Forms.DataGridView();
 			this.label3 = new System.Windows.Forms.Label();
@@ -41,17 +48,15 @@
 			this.lblSemanticType = new System.Windows.Forms.Label();
 			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
 			this.lblCollectionName = new System.Windows.Forms.Label();
-			this.lblAssociatedData = new System.Windows.Forms.Label();
-			this.dgvAssociationData = new System.Windows.Forms.DataGridView();
-			this.btnAssociateRecords = new System.Windows.Forms.Button();
+			this.gbNavigate = new System.Windows.Forms.GroupBox();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
 			this.splitContainer1.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.dgvAssociationData)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvAssociations)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.dgvAssociationData)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// splitContainer1
@@ -66,6 +71,11 @@
 			// 
 			// splitContainer1.Panel2
 			// 
+			this.splitContainer1.Panel2.Controls.Add(this.gbNavigate);
+			this.splitContainer1.Panel2.Controls.Add(this.tbRevAssoc);
+			this.splitContainer1.Panel2.Controls.Add(this.textBox1);
+			this.splitContainer1.Panel2.Controls.Add(this.label5);
+			this.splitContainer1.Panel2.Controls.Add(this.tbFwdAssoc);
 			this.splitContainer1.Panel2.Controls.Add(this.btnAssociateRecords);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvAssociationData);
 			this.splitContainer1.Panel2.Controls.Add(this.lblAssociatedData);
@@ -94,9 +104,76 @@
 			this.tvTypes.Size = new System.Drawing.Size(282, 732);
 			this.tvTypes.TabIndex = 0;
 			// 
+			// tbRevAssoc
+			// 
+			this.tbRevAssoc.Location = new System.Drawing.Point(625, 250);
+			this.tbRevAssoc.Name = "tbRevAssoc";
+			this.tbRevAssoc.Size = new System.Drawing.Size(163, 20);
+			this.tbRevAssoc.TabIndex = 18;
+			// 
+			// textBox1
+			// 
+			this.textBox1.Location = new System.Drawing.Point(625, 230);
+			this.textBox1.Name = "textBox1";
+			this.textBox1.Size = new System.Drawing.Size(163, 20);
+			this.textBox1.TabIndex = 17;
+			// 
+			// label5
+			// 
+			this.label5.AutoSize = true;
+			this.label5.Location = new System.Drawing.Point(551, 252);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(66, 15);
+			this.label5.TabIndex = 16;
+			this.label5.Text = "Rev Assoc:";
+			// 
+			// tbFwdAssoc
+			// 
+			this.tbFwdAssoc.AutoSize = true;
+			this.tbFwdAssoc.Location = new System.Drawing.Point(551, 233);
+			this.tbFwdAssoc.Name = "tbFwdAssoc";
+			this.tbFwdAssoc.Size = new System.Drawing.Size(68, 15);
+			this.tbFwdAssoc.TabIndex = 15;
+			this.tbFwdAssoc.Text = "Fwd Assoc:";
+			// 
+			// btnAssociateRecords
+			// 
+			this.btnAssociateRecords.Location = new System.Drawing.Point(803, 239);
+			this.btnAssociateRecords.Name = "btnAssociateRecords";
+			this.btnAssociateRecords.Size = new System.Drawing.Size(75, 23);
+			this.btnAssociateRecords.TabIndex = 14;
+			this.btnAssociateRecords.Text = "Associate";
+			this.btnAssociateRecords.UseVisualStyleBackColor = true;
+			this.btnAssociateRecords.Click += new System.EventHandler(this.btnAssociateRecords_Click);
+			// 
+			// dgvAssociationData
+			// 
+			this.dgvAssociationData.AllowUserToAddRows = false;
+			this.dgvAssociationData.AllowUserToDeleteRows = false;
+			this.dgvAssociationData.AllowUserToResizeRows = false;
+			this.dgvAssociationData.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+			this.dgvAssociationData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+			this.dgvAssociationData.Location = new System.Drawing.Point(391, 288);
+			this.dgvAssociationData.MultiSelect = false;
+			this.dgvAssociationData.Name = "dgvAssociationData";
+			this.dgvAssociationData.ReadOnly = true;
+			this.dgvAssociationData.RowHeadersVisible = false;
+			this.dgvAssociationData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+			this.dgvAssociationData.Size = new System.Drawing.Size(487, 206);
+			this.dgvAssociationData.TabIndex = 13;
+			// 
+			// lblAssociatedData
+			// 
+			this.lblAssociatedData.AutoSize = true;
+			this.lblAssociatedData.Location = new System.Drawing.Point(388, 268);
+			this.lblAssociatedData.Name = "lblAssociatedData";
+			this.lblAssociatedData.Size = new System.Drawing.Size(101, 15);
+			this.lblAssociatedData.TabIndex = 12;
+			this.lblAssociatedData.Text = "Association Data:";
+			// 
 			// btnCreate
 			// 
-			this.btnCreate.Location = new System.Drawing.Point(21, 477);
+			this.btnCreate.Location = new System.Drawing.Point(21, 501);
 			this.btnCreate.Name = "btnCreate";
 			this.btnCreate.Size = new System.Drawing.Size(75, 23);
 			this.btnCreate.TabIndex = 10;
@@ -111,7 +188,7 @@
 			this.dgvAssociations.AllowUserToResizeRows = false;
 			this.dgvAssociations.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
 			this.dgvAssociations.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-			this.dgvAssociations.Location = new System.Drawing.Point(21, 264);
+			this.dgvAssociations.Location = new System.Drawing.Point(21, 288);
 			this.dgvAssociations.MultiSelect = false;
 			this.dgvAssociations.Name = "dgvAssociations";
 			this.dgvAssociations.ReadOnly = true;
@@ -123,7 +200,7 @@
 			// label3
 			// 
 			this.label3.AutoSize = true;
-			this.label3.Location = new System.Drawing.Point(18, 245);
+			this.label3.Location = new System.Drawing.Point(18, 269);
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(78, 15);
 			this.label3.TabIndex = 8;
@@ -212,40 +289,14 @@
 			this.lblCollectionName.TabIndex = 0;
 			this.lblCollectionName.Text = "Collection:";
 			// 
-			// lblAssociatedData
+			// gbNavigate
 			// 
-			this.lblAssociatedData.AutoSize = true;
-			this.lblAssociatedData.Location = new System.Drawing.Point(388, 244);
-			this.lblAssociatedData.Name = "lblAssociatedData";
-			this.lblAssociatedData.Size = new System.Drawing.Size(101, 15);
-			this.lblAssociatedData.TabIndex = 12;
-			this.lblAssociatedData.Text = "Association Data:";
-			// 
-			// dgvAssociationData
-			// 
-			this.dgvAssociationData.AllowUserToAddRows = false;
-			this.dgvAssociationData.AllowUserToDeleteRows = false;
-			this.dgvAssociationData.AllowUserToResizeRows = false;
-			this.dgvAssociationData.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-			this.dgvAssociationData.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-			this.dgvAssociationData.Location = new System.Drawing.Point(391, 264);
-			this.dgvAssociationData.MultiSelect = false;
-			this.dgvAssociationData.Name = "dgvAssociationData";
-			this.dgvAssociationData.ReadOnly = true;
-			this.dgvAssociationData.RowHeadersVisible = false;
-			this.dgvAssociationData.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-			this.dgvAssociationData.Size = new System.Drawing.Size(487, 206);
-			this.dgvAssociationData.TabIndex = 13;
-			// 
-			// btnAssociateRecords
-			// 
-			this.btnAssociateRecords.Location = new System.Drawing.Point(593, 231);
-			this.btnAssociateRecords.Name = "btnAssociateRecords";
-			this.btnAssociateRecords.Size = new System.Drawing.Size(75, 23);
-			this.btnAssociateRecords.TabIndex = 14;
-			this.btnAssociateRecords.Text = "Associate";
-			this.btnAssociateRecords.UseVisualStyleBackColor = true;
-			this.btnAssociateRecords.Click += new System.EventHandler(this.btnAssociateRecords_Click);
+			this.gbNavigate.Location = new System.Drawing.Point(885, 13);
+			this.gbNavigate.Name = "gbNavigate";
+			this.gbNavigate.Size = new System.Drawing.Size(172, 481);
+			this.gbNavigate.TabIndex = 19;
+			this.gbNavigate.TabStop = false;
+			this.gbNavigate.Text = "Navigate To:";
 			// 
 			// SemanticDesigner
 			// 
@@ -260,10 +311,10 @@
 			this.splitContainer1.Panel2.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
 			this.splitContainer1.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.dgvAssociationData)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvAssociations)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.dgvAssociationData)).EndInit();
 			this.ResumeLayout(false);
 
 		}
@@ -286,6 +337,11 @@
 		private System.Windows.Forms.Button btnAssociateRecords;
 		private System.Windows.Forms.DataGridView dgvAssociationData;
 		private System.Windows.Forms.Label lblAssociatedData;
+		private System.Windows.Forms.TextBox tbRevAssoc;
+		private System.Windows.Forms.TextBox textBox1;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.Label tbFwdAssoc;
+		private System.Windows.Forms.GroupBox gbNavigate;
 	}
 }
 

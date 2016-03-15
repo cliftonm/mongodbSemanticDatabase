@@ -18,5 +18,12 @@ namespace WinformExample
 
 	public interface IAssociatedDataViewService : IService
 	{
+		bool HasSelectedRow { get; }
+		DataRow SelectedRow { get; }
+
+		int SelectedRowIndex { get; }
+		int NumRows { get; }
+
+		DataRow GetRowAt(int idx);
 	}
 }

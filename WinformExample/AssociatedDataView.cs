@@ -4,13 +4,22 @@ using System.Windows.Forms;
 
 using Clifton.Core.Semantics;
 using Clifton.Core.ServiceManagement;
+using Clifton.MongoSemanticDatabase;
 
 namespace WinformExample
 {
 	public class AssociatedDataView : ServiceBase, IAssociatedDataViewService, IReceptor
 	{
+		public Schema Schema { get { return schema; } }
+		public bool HasSelectedRow { get { return dgView.HasSelectedRow(); } }
+		public DataRow SelectedRow { get { return dgView.SelectedRow(); } }
+
+		public int SelectedRowIndex { get { return dgView.SelectedRowIndex(); } }
+		public int NumRows { get { return dgView.NumRows(); } }
+
 		protected Label label;
 		protected DataGridView dgView;
+		protected Schema schema;
 
 		public AssociatedDataView(Label label, DataGridView view)
 		{
@@ -20,9 +29,15 @@ namespace WinformExample
 			this.dgView = view;
 		}
 
+		public DataRow GetRowAt(int idx)
+		{
+			return ((DataView)dgView.DataSource)[idx].Row;
+		}
+
 		// TODO: Duplicate code
 		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_Data data)
 		{
+			schema = data.Schema;
 			DataView dv = new DataView(data.Table);
 			dgView.FindForm().BeginInvoke(() =>
 				{

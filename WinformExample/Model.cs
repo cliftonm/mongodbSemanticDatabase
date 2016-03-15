@@ -28,9 +28,12 @@ namespace WinformExample
 			Schemata.Add(CoreSchemata.CreatePhoneNumberSchema());
 		}
 
+		/// <summary>
+		/// Returns null if schema by name is not found.
+		/// </summary>
 		public Schema GetSchema(string schemaName)
 		{
-			return Schemata.Single(s => s.Name == schemaName);
+			return Schemata.FirstOrDefault(s => s.Name == schemaName);
 		}
 	}
 }

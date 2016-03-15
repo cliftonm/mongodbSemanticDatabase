@@ -25,7 +25,6 @@ namespace WinformExample
 		{
 			this.model = model;
 			currentValues = new Dictionary<string, string>();
-			semanticColumns = new List<ConcreteType>();
 		}
 
 		/// <summary>
@@ -133,7 +132,6 @@ namespace WinformExample
 
 		protected void ResetBuffers()
 		{
-			semanticColumns.Clear();
 			currentValues.Clear();
 			currentId = null;
 		}
@@ -182,80 +180,15 @@ namespace WinformExample
 		{
 			Helpers.Try(() => 
 				{
+					// TODO: Duplicate code
 					List<BsonDocument> docs = model.Db.Query(schema);
-					DataTable dt = InitializeSemanticColumns(schema);
-					PopulateSemanticTable(dt, docs, schema);
-					Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<SemanticViewMembrane, ST_Data>(data => data.Table = dt);
+					DataTable dt = DataHelpers.InitializeSemanticColumns(schema, out semanticColumns);
+					DataHelpers.PopulateSemanticTable(dt, docs, schema);
+					Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<SemanticViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = schema; });
 					dt.RowChanged += RowChangedEvent;
 					dt.TableNewRow += NewRowEvent;
 					dt.RowDeleted += RowDeletedEvent;
 				});
-		}
-
-		/// <summary>
-		/// Recurses into subtypes to create a flat view of the semantic hierarchy.
-		/// </summary>
-		protected DataTable InitializeSemanticColumns(Schema schema)
-		{
-			DataTable dt = new DataTable();
-			dt.TableName = schema.Name;
-			semanticColumns.Clear();
-			dt.Columns.Add("_id");
-			PopulateSemanticColumns(dt, schema, semanticColumns);
-
-			return dt;
-		}
-
-		protected void PopulateSemanticColumns(DataTable dt, Schema schema, List<ConcreteType> columns)
-		{
-			foreach (ConcreteType ct in schema.ConcreteTypes)
-			{
-				dt.Columns.Add(ct.Alias);
-				columns.Add(ct);
-			}
-
-			foreach (Schema st in schema.Subtypes)
-			{
-				PopulateSemanticColumns(dt, st, columns);
-			}
-		}
-
-		/// <summary>
-		/// Recurse into subtypes to populate all concrete data.
-		/// </summary>
-		protected void PopulateSemanticTable(DataTable dt, List<BsonDocument> docs, Schema schema)
-		{
-			foreach (BsonDocument doc in docs)
-			{
-				DataRow row = dt.NewRow();
-				row["_id"] = doc["_id"];
-				PopulateConcreteTypes(row, doc, schema);
-				dt.Rows.Add(row);
-			}
-		}
-
-		protected void PopulateConcreteTypes(DataRow row, BsonDocument doc, Schema schema)
-		{
-			foreach (ConcreteType ct in schema.ConcreteTypes)
-			{
-				if (doc.Contains(ct.Alias))
-				{
-					row[ct.Alias] = doc[ct.Alias];
-				}
-				else if (doc.Contains(ct.Name))
-				{
-					row[ct.Alias] = doc[ct.Name];
-				}
-				else
-				{
-					row[ct.Alias] = " --- ";
-				}
-			}
-
-			foreach (Schema st in schema.Subtypes)
-			{
-				PopulateConcreteTypes(row, doc, st);
-			}
 		}
 	}
 }
