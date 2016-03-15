@@ -11,21 +11,34 @@ namespace WinformExample
 		public List<Schema> Schemata { get; protected set; }
 		public SemanticDatabase Db { get; protected set; }
 
-		public void OpenDatabase(string dbName)
+		public Model()
 		{
 			Db = new SemanticDatabase();
+		}
+
+		public void OpenDatabase(string dbName)
+		{
 			Db.Open(dbName);
 		}
 
 		public void InitializeCoreSchemata()
 		{
+			Schema personSchema;
+			Schema dateSchema;
+			Schema addressSchema;
+			Schema phoneNumberSchema;
 			Schemata = new List<Schema>();
-			Schemata.Add(CoreSchemata.CreateDateSchema());
+			Schemata.Add(dateSchema = CoreSchemata.CreateDateSchema());
 			Schemata.Add(CoreSchemata.CreateTimeSchema());
 			Schemata.Add(CoreSchemata.CreateMonthNameLookupSchema());
-			Schemata.Add(CoreSchemata.CreateAddressSchema());
-			Schemata.Add(CoreSchemata.CreatePersonSchema());
-			Schemata.Add(CoreSchemata.CreatePhoneNumberSchema());
+			Schemata.Add(addressSchema = CoreSchemata.CreateAddressSchema());
+			Schemata.Add(personSchema = CoreSchemata.CreatePersonSchema());
+			Schemata.Add(phoneNumberSchema = CoreSchemata.CreatePhoneNumberSchema());
+
+			// Examples for viewing association data.
+			//Schemata.Add(Db.GetAssociationSchema(personSchema, dateSchema));
+			//Schemata.Add(Db.GetAssociationSchema(personSchema, addressSchema));
+			//Schemata.Add(Db.GetAssociationSchema(personSchema, phoneNumberSchema));
 		}
 
 		/// <summary>
