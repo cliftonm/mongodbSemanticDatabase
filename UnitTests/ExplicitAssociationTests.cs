@@ -43,7 +43,7 @@ namespace UnitTests
 			// See note 1 at end of file.
 			docs = sd.QueryAssociationServerSide(personSchema, dateSchema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString() == "{ \"firstName\" : \"Marc\", \"lastName\" : \"Clifton\", \"month\" : 8, \"day\" : 19, \"year\" : 1962, \"fwdAssocName\" : \"birthdate\", \"revAssocName\" : \"birthdate\" }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\", \"month\" : 8, \"day\" : 19, \"year\" : 1962, \"fwdAssocName\" : \"birthdate\", \"revAssocName\" : \"birthdate\""));
 		}
 
 		[TestMethod]
@@ -71,7 +71,7 @@ namespace UnitTests
 			// See note 2 at end of file.
 			docs = sd.QueryAssociationServerSide(personSchema, personSchema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString() == "{ \"firstName1\" : \"Marc\", \"lastName1\" : \"Clifton\", \"firstName2\" : \"Elisabeth\", \"lastName2\" : \"Clifton\", \"fwdAssocName\" : \"son\", \"revAssocName\" : \"mother\" }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"firstName1\" : \"Marc\", \"lastName1\" : \"Clifton\", \"firstName2\" : \"Elisabeth\", \"lastName2\" : \"Clifton\", \"fwdAssocName\" : \"son\", \"revAssocName\" : \"mother\""));
 		}
 
 		[TestMethod]
@@ -96,7 +96,7 @@ namespace UnitTests
 			// Verify the person-property association.
 			List<BsonDocument> docs = sd.QueryAssociationServerSide(personSchema, propertySchema);
 			Assert.IsTrue(docs.Count == 1);
-			Assert.IsTrue(docs[0].ToString() == "{ \"firstName\" : \"Marc\", \"lastName\" : \"Clifton\", \"propertyName\" : \"Roxbury Rd\", \"fwdAssocName\" : \"purchased\", \"revAssocName\" : \"purchased by\" }");
+			Assert.IsTrue(docs[0].ToString().Contains("\"firstName\" : \"Marc\", \"lastName\" : \"Clifton\", \"propertyName\" : \"Roxbury Rd\", \"fwdAssocName\" : \"purchased\", \"revAssocName\" : \"purchased by\""));
 
 			Schema dateSchema = Helpers.CreatePureDateSchema();
 			string dateId = sd.Insert(dateSchema, BsonDocument.Parse("{month: 12, day: 30, year: 2015}"));
