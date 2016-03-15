@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+using Clifton.Core.Assertions;
 using Clifton.Core.ExtensionMethods;
 
 namespace Clifton.MongoSemanticDatabase
@@ -151,6 +152,79 @@ namespace Clifton.MongoSemanticDatabase
 		}
 
 		/// <summary>
+		/// Delete an entry in the association schema where the doc contains the _id of the association record to delete.
+		/// </summary>
+		public void DeleteAssociation(Schema schema, BsonDocument doc)
+		{
+			// For example, person_phoneNumber
+			List<BsonDocument> recs = GetAll(schema.Name, null, true, doc);
+			Assert.That(recs.Count == 1, "Association record does not exist.");
+			BsonDocument rootRec = recs[0];
+			Assert.That(rootRec["_ref"].ToString().to_i() == 1, "Deleting an association record that is itself associated is not supported.");
+			
+			// For example, person_phoneNumber_Association
+			string rootAssociation = schema.Name + "_Association";
+			string rootAssociationId = rootRec[rootAssociation + "Id"].ToString();
+			List<BsonDocument> rootAssociationRecs = GetAll(rootAssociation, rootAssociationId, true);
+			Assert.That(rootAssociationRecs.Count == 1, "Expected one and only one entry for " + rootAssociation + " where _id = " + rootAssociationId);
+			BsonDocument rootAssociationRec = rootAssociationRecs[0];
+			string associationId = rootAssociationRec["associationId"].ToString();
+
+			// For example, person_phoneNumber_Assocation references the "assocation" collection.
+			List<BsonDocument> associationRecs = GetAll("association", associationId, true);
+			Assert.That(associationRecs.Count == 1, "Expected one and only one entry for 'association' where _id = " + associationId);
+			BsonDocument associationRec = associationRecs[0];
+			string fwdAssocNameId = associationRec["forwardAssociationNameId"].ToString();
+			string revAssocNameId = associationRec["reverseAssociationNameId"].ToString();
+
+			// Drill into the forward/reverse AssociationName collections
+			List<BsonDocument> fwdRefNamesRecs = GetAll("forwardAssociationName", fwdAssocNameId, true);
+			Assert.That(fwdRefNamesRecs.Count == 1, "Expected one and only one name record with _id = " + fwdAssocNameId);
+			BsonDocument fwdRefNameRec = fwdRefNamesRecs[0];
+			int fwdRefNameCount = fwdRefNameRec["_ref"].ToString().to_i();
+			string fwdNameId = fwdRefNameRec["nameId"].ToString();
+			List<BsonDocument> revRefNamesRecs = GetAll("reverseAssociationName", revAssocNameId, true);
+			Assert.That(revRefNamesRecs.Count == 1, "Expected one and only one name record with _id = " + revAssocNameId);
+			BsonDocument revRefNameRec = revRefNamesRecs[0];
+			int revRefNameCount = revRefNameRec["_ref"].ToString().to_i();
+			string revNameId = revRefNameRec["nameId"].ToString();
+
+			// Drill into the name collection.
+			List<BsonDocument> fwdNameRecs = GetAll("name", fwdNameId, true);
+			Assert.That(fwdNameRecs.Count == 1, "Expected one and only one name record with _id = " + fwdNameId);
+			BsonDocument fwdNameRec = fwdNameRecs[0];
+			string fwdName = fwdNameRec["name"].ToString();
+			List<BsonDocument> revNameRecs = GetAll("name", revNameId, true);
+			Assert.That(revNameRecs.Count == 1, "Expected one and only one name record with _id = " + revNameId);
+			BsonDocument revNameRec = revNameRecs[0];
+			string revName = revNameRec["name"].ToString();
+
+			// We now have all the pieces needed to traverse back up the hierarchy.
+			Schema nameSchema = GetNameSchema();
+			InternalDelete(nameSchema, BsonDocument.Parse("{name: '" + fwdName + "'}"));
+			InternalDelete(nameSchema, BsonDocument.Parse("{name: '" + revName + "'}"));
+
+			// The rest have no concrete types, so we can't use InternalDelete because we haven't really implemented Delete correctly to handle cascading (downward) deletes.  A big TODO to understand this correctly.
+			DecrementRefCountOrDelete("forwardAssociationName", fwdRefNameRec, fwdRefNameCount);
+			DecrementRefCountOrDelete("reverseAssociationName", revRefNameRec, revRefNameCount);
+			DecrementRefCountOrDelete("association", associationRec, associationRec["_ref"].ToString().to_i());
+			DecrementRefCountOrDelete(rootAssociation, rootAssociationRec, rootAssociationRec["_ref"].ToString().to_i());
+			DecrementRefCountOrDelete(schema.Name, rootRec, rootRec["_ref"].ToString().to_i());
+		}
+
+		protected void DecrementRefCountOrDelete(string collectionName, BsonDocument doc, int count)
+		{
+			if (count == 1)
+			{
+				Delete(collectionName, doc["_id"].ToString());
+			}
+			else
+			{
+				DecrementRefCount(collectionName, doc["_id"].ToString(), count);
+			}
+		}
+
+		/// <summary>
 		/// Returns a flattened view of the schema hierarchy.  The _id field is the ID of the root type.
 		/// </summary>
 		public List<BsonDocument> Query(Schema schema, string id = null)
@@ -220,6 +294,13 @@ namespace Clifton.MongoSemanticDatabase
 
 		public List<BsonDocument> QueryAssociationServerSide(Schema schema1, Schema schema2, BsonDocument filter = null)
 		{
+			string plan;
+			
+			return QueryAssociationServerSide(schema1, schema2, out plan, filter);
+		}
+
+		public List<BsonDocument> QueryAssociationServerSide(Schema schema1, Schema schema2, out string plan, BsonDocument filter = null)
+		{
 			List<string> fullPipeline = new List<string>();
 			List<string> pipeline1;
 			List<string> projections1;
@@ -248,14 +329,12 @@ namespace Clifton.MongoSemanticDatabase
 				schema1.Name,
 				schema1Num));
 			associationJoin.Add(String.Format("{{$unwind: '${0}'}},", assocCollectionName));
-			associationJoin.Add(String.Format("{{$lookup: {{from: '{1}', localField: '{0}.{1}{2}Id', foreignField: '_id', as: '{1}{2}'}} }},",
-				assocCollectionName, schema2Name, schema2Num));
+			associationJoin.Add(String.Format("{{$lookup: {{from: '{1}', localField: '{0}.{1}{2}Id', foreignField: '_id', as: '{1}{2}'}} }},", assocCollectionName, schema2Name, schema2Num));
 			associationJoin.Add(String.Format("{{$unwind: '${0}{1}'}},", schema2Name, schema2Num));
 
 			List<string> assocPipeline = new List<string>();
 			// specific association to common assocation piece:
-			assocPipeline.Add(String.Format("{{$lookup: {{from: '{0}_Association', localField: '{0}.{0}_AssociationId', foreignField: '_id', as: 'specAssoc'}} }},",
-				assocCollectionName));
+			assocPipeline.Add(String.Format("{{$lookup: {{from: '{0}_Association', localField: '{0}.{0}_AssociationId', foreignField: '_id', as: 'specAssoc'}} }},", assocCollectionName));
 			assocPipeline.Add("{$unwind: '$specAssoc'},");
 
 			// Common part:
@@ -285,18 +364,28 @@ namespace Clifton.MongoSemanticDatabase
 			allProjections.Add("'" + schema1.Name + schema1Num + "Id' : '$" + assocCollectionName + "." + schema1.Name + schema1Num + "Id'");
 			allProjections.Add("'" + schema2.Name + schema2Num + "Id' : '$" + assocCollectionName + "." + schema2.Name + schema2Num + "Id'");
 
-			fullPipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", allProjections)));
+			// fullPipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", allProjections)));
+			// We want the id of the association record.
+			allProjections.Insert(0, "'_id': '$" + assocCollectionName + "._id'");
+			fullPipeline.Add(String.Format("{{$project: {{{0}}} }}", String.Join(",", allProjections)));
 
-			string plan = "db." + schema1.Name + ".aggregate(" + String.Join("\r\n", fullPipeline) + ")";
+			if (filter != null)
+			{
+				// TODO: The plan is missing a trailing comma after the projection.
+				// TODO: Remove all the dreck where we're appending ',' to the pipeline and add it in as part of the join.  I don't think AppendStage cares about the ',' anyways.
+				fullPipeline.Add("{$match: " + filter.ToString() + "}");
+			}
+
+			plan = "db." + schema1.Name + ".aggregate(" + String.Join("\r\n", fullPipeline) + ")";
 
 			var collection = db.GetCollection<BsonDocument>(schema1.Name);
 			var aggr = collection.Aggregate();
 			fullPipeline.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
 
-			if (filter != null)
-			{
-				aggr = aggr.AppendStage<BsonDocument>("{$match: "+filter.ToString()+"}");
-			}
+			//if (filter != null)
+			//{
+			//	aggr = aggr.AppendStage<BsonDocument>("{$match: "+filter.ToString()+"}");
+			//}
 
 			List<BsonDocument> records = aggr.ToList();
 
@@ -322,7 +411,8 @@ namespace Clifton.MongoSemanticDatabase
 		}
 
 		/// <summary>
-		/// Returns all but the _id field of a MongoDB collection.
+		/// Returns all data in a MongoDB collection.  By default, the _id field is not returned.  
+		/// An optional _id filter can be passed in with a string.  To filter on other fields, leave id null and specify a BsonDocument filter.
 		/// </summary>
 		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false, BsonDocument filter = null)
 		{
@@ -1155,6 +1245,20 @@ namespace Clifton.MongoSemanticDatabase
 					}}
 				]
 			}}", schema1.Name, schema2.Name, schema1Name, schema2Name);
+
+			return SchemaFromJson(json);
+		}
+
+		protected Schema GetNameSchema()
+		{
+			string json = @"
+			{
+				name: 'name',
+				concreteTypes:
+				[
+					{name: 'name', type: 'System.String'}
+				]
+			}";
 
 			return SchemaFromJson(json);
 		}

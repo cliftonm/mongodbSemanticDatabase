@@ -54,6 +54,11 @@ namespace Clifton.MongoSemanticDatabase
 			ConcreteTypes = new List<ConcreteType>();
 		}
 
+		public override string ToString()
+		{
+			return Name;
+		}
+
 		public bool ContainsAliasedType(string alias, out string name)
 		{
 			name = null;

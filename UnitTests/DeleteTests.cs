@@ -140,5 +140,7 @@ namespace UnitTests
 		// a super-type.  We need a master schema to know whether a sub-type has a super-type somewhere,
 		// or we need to ask the DB for fields of the form "[subtype]Id", which would indicate that the
 		// subtype is an FK in a supertype.
+
+		// TODO: Delete association testing.
 	}
 }

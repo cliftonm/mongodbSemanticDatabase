@@ -30,10 +30,11 @@
 		{
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.tvTypes = new System.Windows.Forms.TreeView();
+			this.gbNavigate = new System.Windows.Forms.GroupBox();
 			this.tbRevAssoc = new System.Windows.Forms.TextBox();
-			this.textBox1 = new System.Windows.Forms.TextBox();
+			this.tbFwdAssoc = new System.Windows.Forms.TextBox();
 			this.label5 = new System.Windows.Forms.Label();
-			this.tbFwdAssoc = new System.Windows.Forms.Label();
+			this.lblFwdAssoc = new System.Windows.Forms.Label();
 			this.btnAssociateRecords = new System.Windows.Forms.Button();
 			this.dgvAssociationData = new System.Windows.Forms.DataGridView();
 			this.lblAssociatedData = new System.Windows.Forms.Label();
@@ -48,7 +49,7 @@
 			this.lblSemanticType = new System.Windows.Forms.Label();
 			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
 			this.lblCollectionName = new System.Windows.Forms.Label();
-			this.gbNavigate = new System.Windows.Forms.GroupBox();
+			this.btnDeleteAssoc = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
@@ -71,11 +72,12 @@
 			// 
 			// splitContainer1.Panel2
 			// 
+			this.splitContainer1.Panel2.Controls.Add(this.btnDeleteAssoc);
 			this.splitContainer1.Panel2.Controls.Add(this.gbNavigate);
 			this.splitContainer1.Panel2.Controls.Add(this.tbRevAssoc);
-			this.splitContainer1.Panel2.Controls.Add(this.textBox1);
-			this.splitContainer1.Panel2.Controls.Add(this.label5);
 			this.splitContainer1.Panel2.Controls.Add(this.tbFwdAssoc);
+			this.splitContainer1.Panel2.Controls.Add(this.label5);
+			this.splitContainer1.Panel2.Controls.Add(this.lblFwdAssoc);
 			this.splitContainer1.Panel2.Controls.Add(this.btnAssociateRecords);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvAssociationData);
 			this.splitContainer1.Panel2.Controls.Add(this.lblAssociatedData);
@@ -104,6 +106,15 @@
 			this.tvTypes.Size = new System.Drawing.Size(282, 732);
 			this.tvTypes.TabIndex = 0;
 			// 
+			// gbNavigate
+			// 
+			this.gbNavigate.Location = new System.Drawing.Point(885, 13);
+			this.gbNavigate.Name = "gbNavigate";
+			this.gbNavigate.Size = new System.Drawing.Size(172, 481);
+			this.gbNavigate.TabIndex = 19;
+			this.gbNavigate.TabStop = false;
+			this.gbNavigate.Text = "Navigate To:";
+			// 
 			// tbRevAssoc
 			// 
 			this.tbRevAssoc.Location = new System.Drawing.Point(625, 250);
@@ -111,12 +122,12 @@
 			this.tbRevAssoc.Size = new System.Drawing.Size(163, 20);
 			this.tbRevAssoc.TabIndex = 18;
 			// 
-			// textBox1
+			// tbFwdAssoc
 			// 
-			this.textBox1.Location = new System.Drawing.Point(625, 230);
-			this.textBox1.Name = "textBox1";
-			this.textBox1.Size = new System.Drawing.Size(163, 20);
-			this.textBox1.TabIndex = 17;
+			this.tbFwdAssoc.Location = new System.Drawing.Point(625, 230);
+			this.tbFwdAssoc.Name = "tbFwdAssoc";
+			this.tbFwdAssoc.Size = new System.Drawing.Size(163, 20);
+			this.tbFwdAssoc.TabIndex = 17;
 			// 
 			// label5
 			// 
@@ -127,14 +138,14 @@
 			this.label5.TabIndex = 16;
 			this.label5.Text = "Rev Assoc:";
 			// 
-			// tbFwdAssoc
+			// lblFwdAssoc
 			// 
-			this.tbFwdAssoc.AutoSize = true;
-			this.tbFwdAssoc.Location = new System.Drawing.Point(551, 233);
-			this.tbFwdAssoc.Name = "tbFwdAssoc";
-			this.tbFwdAssoc.Size = new System.Drawing.Size(68, 15);
-			this.tbFwdAssoc.TabIndex = 15;
-			this.tbFwdAssoc.Text = "Fwd Assoc:";
+			this.lblFwdAssoc.AutoSize = true;
+			this.lblFwdAssoc.Location = new System.Drawing.Point(551, 233);
+			this.lblFwdAssoc.Name = "lblFwdAssoc";
+			this.lblFwdAssoc.Size = new System.Drawing.Size(68, 15);
+			this.lblFwdAssoc.TabIndex = 15;
+			this.lblFwdAssoc.Text = "Fwd Assoc:";
 			// 
 			// btnAssociateRecords
 			// 
@@ -289,14 +300,15 @@
 			this.lblCollectionName.TabIndex = 0;
 			this.lblCollectionName.Text = "Collection:";
 			// 
-			// gbNavigate
+			// btnDeleteAssoc
 			// 
-			this.gbNavigate.Location = new System.Drawing.Point(885, 13);
-			this.gbNavigate.Name = "gbNavigate";
-			this.gbNavigate.Size = new System.Drawing.Size(172, 481);
-			this.gbNavigate.TabIndex = 19;
-			this.gbNavigate.TabStop = false;
-			this.gbNavigate.Text = "Navigate To:";
+			this.btnDeleteAssoc.Location = new System.Drawing.Point(391, 501);
+			this.btnDeleteAssoc.Name = "btnDeleteAssoc";
+			this.btnDeleteAssoc.Size = new System.Drawing.Size(116, 23);
+			this.btnDeleteAssoc.TabIndex = 20;
+			this.btnDeleteAssoc.Text = "Delete Assoc.";
+			this.btnDeleteAssoc.UseVisualStyleBackColor = true;
+			this.btnDeleteAssoc.Click += new System.EventHandler(this.btnDeleteAssoc_Click);
 			// 
 			// SemanticDesigner
 			// 
@@ -338,10 +350,11 @@
 		private System.Windows.Forms.DataGridView dgvAssociationData;
 		private System.Windows.Forms.Label lblAssociatedData;
 		private System.Windows.Forms.TextBox tbRevAssoc;
-		private System.Windows.Forms.TextBox textBox1;
+		private System.Windows.Forms.TextBox tbFwdAssoc;
 		private System.Windows.Forms.Label label5;
-		private System.Windows.Forms.Label tbFwdAssoc;
+		private System.Windows.Forms.Label lblFwdAssoc;
 		private System.Windows.Forms.GroupBox gbNavigate;
+		private System.Windows.Forms.Button btnDeleteAssoc;
 	}
 }
 

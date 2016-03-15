@@ -25,6 +25,10 @@ namespace WinformExample
 		protected SemanticController semanticController;
 		protected CollectionController collectionController;
 
+		protected Schema assocSchema;
+		protected Schema fromSchema;
+		protected Schema toSchema;
+
 		public SemanticDesigner(Model model)
 		{
 			this.model = model;
@@ -86,21 +90,39 @@ namespace WinformExample
 
 		protected void OnNavigation(object sender, EventArgs e)
 		{
+			// TODO: If we make this a separate view class, it can maintain the from/to/assoc Schema variables itself instead of hold them in the main form class!
 			string assocName = (string)((Button)sender).Tag;
 			string fromSchemaName = assocName.LeftOf("_");
 			string toSchemaName = assocName.RightOf("_");
-			Schema fromSchema = model.GetSchema(fromSchemaName);
-			Schema toSchema = model.GetSchema(toSchemaName);
-			// Schema assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
+			fromSchema = model.GetSchema(fromSchemaName);
+			toSchema = model.GetSchema(toSchemaName);
+			assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
+			ShowAssociatedData();
+		}
 
+		protected void ShowAssociatedData()
+		{
 			// TODO: Duplicate code, sort of (notice use of assocSchema and toSchema)
-			BsonDocument filter = new BsonDocument(fromSchemaName + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
+			BsonDocument filter = new BsonDocument(fromSchema.Name + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
 			// List<BsonDocument> docs = model.Db.Query(assocSchema, filter);
-			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(fromSchema, toSchema, filter);
+			string plan;
+			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(fromSchema, toSchema, out plan, filter);
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<PlanViewMembrane, ST_Plan>(p => p.Plan = plan);
 			List<ConcreteType> semanticColumns;
 			DataTable dt = DataHelpers.InitializeSemanticColumns(toSchema, out semanticColumns);
 			DataHelpers.PopulateSemanticTable(dt, docs, toSchema);
+			AddForwardAssociationNames(dt, docs);
 			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = toSchema; });
+		}
+
+		protected void AddForwardAssociationNames(DataTable dt, List<BsonDocument> docs)
+		{
+			dt.Columns.Add("fwdAssocName");
+
+			for (int i = 0; i < dt.Rows.Count; i++)
+			{
+				dt.Rows[i]["fwdAssocName"] = docs[i]["fwdAssocName"];
+			}
 		}
 
 		protected void OnSemanticTypeSelected(object sender, TreeViewEventArgs e)
@@ -209,7 +231,7 @@ namespace WinformExample
 
 				string fwdName = fromSchema.Name;
 				string revName = toSchema.Name;
-				string fwdDescr = tbFwdAssoc.Text;
+				string fwdDescr = lblFwdAssoc.Text;
 				string revDescr = tbRevAssoc.Text;
 
 				BsonDocument doc = new BsonDocument(fwdName + "Id", new ObjectId(fromId));
@@ -217,6 +239,17 @@ namespace WinformExample
 				doc.Add("forwardAssociationName", tbFwdAssoc.Text);
 				doc.Add("reverseAssociationName", tbRevAssoc.Text);
 				model.Db.Insert(assocSchema, doc);
+			}
+		}
+
+		private void btnDeleteAssoc_Click(object sender, EventArgs e)
+		{
+			if (dgvAssociationData.HasSelectedRow())
+			{
+				DataRow row = dgvAssociationData.SelectedRow();
+				string id = row["_id"].ToString();
+				model.Db.DeleteAssociation(assocSchema, new BsonDocument("_id", new ObjectId(id)));
+				ShowAssociatedData();
 			}
 		}
 	}
