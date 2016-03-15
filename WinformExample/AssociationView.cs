@@ -15,6 +15,7 @@ namespace WinformExample
 	public class AssociationView : IReceptor
 	{
 		public Schema Schema { get { return schema; } }
+		public int Records { get { return dataView.Count; } }
 
 		protected Label label;
 		protected DataGridView view;

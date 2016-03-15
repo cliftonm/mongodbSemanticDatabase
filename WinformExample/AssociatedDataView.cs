@@ -34,6 +34,12 @@ namespace WinformExample
 			return ((DataView)dgView.DataSource)[idx].Row;
 		}
 
+		public void Clear()
+		{
+			dgView.DataSource = null;
+			label.Text = "Semantic Type: ";
+		}
+
 		// TODO: Duplicate code
 		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_Data data)
 		{
