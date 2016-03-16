@@ -5,6 +5,7 @@ using System.Windows.Forms;
 
 using Clifton.Core.Semantics;
 using Clifton.Core.ServiceManagement;
+using Clifton.MongoSemanticDatabase;
 
 namespace WinformExample
 {
@@ -13,6 +14,30 @@ namespace WinformExample
 		public static void Log(string msg)
 		{
 			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<LogViewMembrane, ST_Log>(log => log.Message = msg);
+		}
+
+		public static string GetSchemaNodeText(Schema schema)
+		{
+			string ret = schema.Name;
+
+			if (schema.IsAliased)
+			{
+				ret = ret + " (" + schema.Alias + ")";
+			}
+
+			return ret;
+		}
+
+		public static string GetConcreteTypeText(ConcreteType ct)
+		{
+			string ret = ct.Name;
+
+			if (ct.IsAliased)
+			{
+				ret = ret + " (" + ct.Alias + ")";
+			}
+
+			return ret;
 		}
 
 		public static DataTable FillTable(List<string> list, string colName)

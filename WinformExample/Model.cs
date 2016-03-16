@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+
+using Newtonsoft.Json;
 
 using Clifton.MongoSemanticDatabase;
 
@@ -47,6 +50,19 @@ namespace WinformExample
 		public Schema GetSchema(string schemaName)
 		{
 			return Schemata.FirstOrDefault(s => s.Name == schemaName);
+		}
+
+		public void Load(string fn)
+		{
+			string json = File.ReadAllText(fn);
+			Schemata.Clear();
+			Schemata = (List<Schema>)JsonConvert.DeserializeObject(json, Schemata.GetType());
+		}
+
+		public void Save(string fn)
+		{
+			string json = JsonConvert.SerializeObject(Schemata, Formatting.Indented);
+			File.WriteAllText(fn, json);
 		}
 	}
 }

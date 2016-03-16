@@ -75,6 +75,11 @@ namespace Clifton.MongoSemanticDatabase
 			var result = collection.DeleteOne(new BsonDocument("_id", data.Elements.Single(el => el.Name == "_id").Value));
 		}
 
+		public void RemoveCollection(string collectionName)
+		{
+			db.DropCollection(collectionName);
+		}
+
 		/// <summary>
 		/// Return the names of all collections in the database.
 		/// </summary>

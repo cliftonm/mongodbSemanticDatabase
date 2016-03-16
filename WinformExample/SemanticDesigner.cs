@@ -21,6 +21,7 @@ namespace WinformExample
 		protected SemanticView semanticView;
 		protected AssociationView assocView;
 		protected AssociatedDataView assocDataView;
+		protected SemanticTreeView semanticTreeView;
 
 		protected SemanticController semanticController;
 		protected CollectionController collectionController;
@@ -34,9 +35,6 @@ namespace WinformExample
 		{
 			this.model = model;
 			InitializeComponent();
-			InitializeSchemaView();
-			// tvTypes.ExpandAll();
-			tvTypes.Nodes[0].Expand();
 
 			new PlanView(tbPlan);
 			new LogView(tbLog);
@@ -44,7 +42,9 @@ namespace WinformExample
 			assocView = new AssociationView(model, dgvAssociations);
 			semanticView = new SemanticView(lblSemanticType, dgvSemanticData);
 			semanticController = new SemanticController(model);
+			semanticTreeView = new SemanticTreeView(model, tvTypes);
 
+			// TODO: Put all local event handlers into the semanticTreeView or create a semanticTreeController.
 			tvTypes.AfterSelect += semanticController.AfterSelectEvent;
 			tvTypes.AfterSelect += OnSemanticTypeSelected;
 			dgvSemanticData.SelectionChanged += semanticController.SelectionChangedEvent;
@@ -54,6 +54,8 @@ namespace WinformExample
 			tvTypes.AfterSelect += collectionController.AfterSelectEvent;
 
 			Program.serviceManager.Get<ISemanticProcessor>().Register<AssociationViewMembrane>(this);
+
+			LoadSchema();
 		}
 
 		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_Associations assoc)
@@ -203,7 +205,7 @@ namespace WinformExample
 
 		protected TreeNode CreateSchemaNode(Schema schema)
 		{
-			TreeNode schemaRootNode = new TreeNode(GetSchemaNodeText(schema));
+			TreeNode schemaRootNode = new TreeNode(Helpers.GetSchemaNodeText(schema));
 			schemaRootNode.Tag = schema;
 			TreeNode concreteTypesNode = schemaRootNode.Nodes.Add("Concrete Types");
 			TreeNode subTypesNode = schemaRootNode.Nodes.Add("Subtypes");
@@ -218,7 +220,7 @@ namespace WinformExample
 		{
 			foreach (ConcreteType ct in schema.ConcreteTypes)
 			{
-				TreeNode ctNode = cttn.Nodes.Add(GetConcreteTypeText(ct));
+				TreeNode ctNode = cttn.Nodes.Add(Helpers.GetConcreteTypeText(ct));
 				ctNode.Tag = ct;
 			}
 		}
@@ -230,30 +232,6 @@ namespace WinformExample
 				TreeNode tn = CreateSchemaNode(st);
 				subTypesNode.Nodes.Add(tn);
 			}
-		}
-
-		protected string GetSchemaNodeText(Schema schema)
-		{
-			string ret = schema.Name;
-
-			if (schema.IsAliased)
-			{
-				ret = ret + " (" + schema.Alias + ")";
-			}
-
-			return ret;
-		}
-
-		protected string GetConcreteTypeText(ConcreteType ct)
-		{
-			string ret = ct.Name;
-
-			if (ct.IsAliased)
-			{
-				ret = ret + " (" + ct.Alias + ")";
-			}
-
-			return ret;
 		}
 
 		private void btnCreate_Click(object sender, EventArgs e)
@@ -307,6 +285,38 @@ namespace WinformExample
 				model.Db.DeleteAssociation(assocSchema, new BsonDocument("_id", new ObjectId(id)));
 				showForward.IfElse(()=>ShowForwardAssociatedData(), ()=>ShowReverseAssociatedData());
 			}
+		}
+
+		private void mnuLoadSchema_Click(object sender, EventArgs e)
+		{
+			LoadSchema();
+		}
+
+		protected void LoadSchema()
+		{
+			model.Load("schema.json");
+			tvTypes.Nodes.Clear();
+			InitializeSchemaView();
+
+			if (tvTypes.Nodes.Count > 0)
+			{
+				tvTypes.Nodes[0].Expand();
+			}
+		}
+
+		private void mnuSaveSchema_Click(object sender, EventArgs e)
+		{
+			model.Save("schema.json");
+		}
+
+		private void mnuExit_Click(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		private void mnuImportSchema_Click(object sender, EventArgs e)
+		{
+			MessageBox.Show("Coming soon!", "Not implemented.", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 	}
 }

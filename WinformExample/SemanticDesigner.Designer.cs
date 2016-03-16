@@ -30,6 +30,7 @@
 		{
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.tvTypes = new System.Windows.Forms.TreeView();
+			this.btnDeleteAssoc = new System.Windows.Forms.Button();
 			this.gbNavigate = new System.Windows.Forms.GroupBox();
 			this.tbRevAssoc = new System.Windows.Forms.TextBox();
 			this.tbFwdAssoc = new System.Windows.Forms.TextBox();
@@ -49,7 +50,13 @@
 			this.lblSemanticType = new System.Windows.Forms.Label();
 			this.dgvCollectionData = new System.Windows.Forms.DataGridView();
 			this.lblCollectionName = new System.Windows.Forms.Label();
-			this.btnDeleteAssoc = new System.Windows.Forms.Button();
+			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuLoadSchema = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuSaveSchema = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+			this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuImportSchema = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
@@ -58,12 +65,15 @@
 			((System.ComponentModel.ISupportInitialize)(this.dgvAssociations)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).BeginInit();
+			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// splitContainer1
 			// 
-			this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.splitContainer1.Location = new System.Drawing.Point(0, 0);
+			this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.splitContainer1.Location = new System.Drawing.Point(0, 33);
 			this.splitContainer1.Name = "splitContainer1";
 			// 
 			// splitContainer1.Panel1
@@ -92,8 +102,8 @@
 			this.splitContainer1.Panel2.Controls.Add(this.lblSemanticType);
 			this.splitContainer1.Panel2.Controls.Add(this.dgvCollectionData);
 			this.splitContainer1.Panel2.Controls.Add(this.lblCollectionName);
-			this.splitContainer1.Size = new System.Drawing.Size(1355, 732);
-			this.splitContainer1.SplitterDistance = 282;
+			this.splitContainer1.Size = new System.Drawing.Size(1355, 699);
+			this.splitContainer1.SplitterDistance = 231;
 			this.splitContainer1.TabIndex = 0;
 			// 
 			// tvTypes
@@ -103,8 +113,18 @@
 			this.tvTypes.HideSelection = false;
 			this.tvTypes.Location = new System.Drawing.Point(0, 0);
 			this.tvTypes.Name = "tvTypes";
-			this.tvTypes.Size = new System.Drawing.Size(282, 732);
+			this.tvTypes.Size = new System.Drawing.Size(231, 699);
 			this.tvTypes.TabIndex = 0;
+			// 
+			// btnDeleteAssoc
+			// 
+			this.btnDeleteAssoc.Location = new System.Drawing.Point(391, 501);
+			this.btnDeleteAssoc.Name = "btnDeleteAssoc";
+			this.btnDeleteAssoc.Size = new System.Drawing.Size(116, 23);
+			this.btnDeleteAssoc.TabIndex = 20;
+			this.btnDeleteAssoc.Text = "Delete Assoc.";
+			this.btnDeleteAssoc.UseVisualStyleBackColor = true;
+			this.btnDeleteAssoc.Click += new System.EventHandler(this.btnDeleteAssoc_Click);
 			// 
 			// gbNavigate
 			// 
@@ -300,15 +320,60 @@
 			this.lblCollectionName.TabIndex = 0;
 			this.lblCollectionName.Text = "Collection:";
 			// 
-			// btnDeleteAssoc
+			// menuStrip1
 			// 
-			this.btnDeleteAssoc.Location = new System.Drawing.Point(391, 501);
-			this.btnDeleteAssoc.Name = "btnDeleteAssoc";
-			this.btnDeleteAssoc.Size = new System.Drawing.Size(116, 23);
-			this.btnDeleteAssoc.TabIndex = 20;
-			this.btnDeleteAssoc.Text = "Delete Assoc.";
-			this.btnDeleteAssoc.UseVisualStyleBackColor = true;
-			this.btnDeleteAssoc.Click += new System.EventHandler(this.btnDeleteAssoc_Click);
+			this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+			this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+			this.menuStrip1.Name = "menuStrip1";
+			this.menuStrip1.Size = new System.Drawing.Size(1355, 24);
+			this.menuStrip1.TabIndex = 1;
+			this.menuStrip1.Text = "menuStrip1";
+			// 
+			// fileToolStripMenuItem
+			// 
+			this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuLoadSchema,
+            this.mnuImportSchema,
+            this.mnuSaveSchema,
+            this.toolStripMenuItem1,
+            this.mnuExit});
+			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+			this.fileToolStripMenuItem.Text = "&File";
+			// 
+			// mnuLoadSchema
+			// 
+			this.mnuLoadSchema.Name = "mnuLoadSchema";
+			this.mnuLoadSchema.Size = new System.Drawing.Size(164, 22);
+			this.mnuLoadSchema.Text = "&Load Schema";
+			this.mnuLoadSchema.Click += new System.EventHandler(this.mnuLoadSchema_Click);
+			// 
+			// mnuSaveSchema
+			// 
+			this.mnuSaveSchema.Name = "mnuSaveSchema";
+			this.mnuSaveSchema.Size = new System.Drawing.Size(164, 22);
+			this.mnuSaveSchema.Text = "&Save Schema";
+			this.mnuSaveSchema.Click += new System.EventHandler(this.mnuSaveSchema_Click);
+			// 
+			// toolStripMenuItem1
+			// 
+			this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+			this.toolStripMenuItem1.Size = new System.Drawing.Size(161, 6);
+			// 
+			// mnuExit
+			// 
+			this.mnuExit.Name = "mnuExit";
+			this.mnuExit.Size = new System.Drawing.Size(164, 22);
+			this.mnuExit.Text = "E&xit";
+			this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
+			// 
+			// mnuImportSchema
+			// 
+			this.mnuImportSchema.Name = "mnuImportSchema";
+			this.mnuImportSchema.Size = new System.Drawing.Size(164, 22);
+			this.mnuImportSchema.Text = "&Import Schema...";
+			this.mnuImportSchema.Click += new System.EventHandler(this.mnuImportSchema_Click);
 			// 
 			// SemanticDesigner
 			// 
@@ -316,6 +381,8 @@
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(1355, 732);
 			this.Controls.Add(this.splitContainer1);
+			this.Controls.Add(this.menuStrip1);
+			this.MainMenuStrip = this.menuStrip1;
 			this.Name = "SemanticDesigner";
 			this.Text = "Semantic Designer";
 			this.splitContainer1.Panel1.ResumeLayout(false);
@@ -327,7 +394,10 @@
 			((System.ComponentModel.ISupportInitialize)(this.dgvAssociations)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvSemanticData)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.dgvCollectionData)).EndInit();
+			this.menuStrip1.ResumeLayout(false);
+			this.menuStrip1.PerformLayout();
 			this.ResumeLayout(false);
+			this.PerformLayout();
 
 		}
 
@@ -355,6 +425,13 @@
 		private System.Windows.Forms.Label lblFwdAssoc;
 		private System.Windows.Forms.GroupBox gbNavigate;
 		private System.Windows.Forms.Button btnDeleteAssoc;
+		private System.Windows.Forms.MenuStrip menuStrip1;
+		private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem mnuLoadSchema;
+		private System.Windows.Forms.ToolStripMenuItem mnuSaveSchema;
+		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+		private System.Windows.Forms.ToolStripMenuItem mnuExit;
+		private System.Windows.Forms.ToolStripMenuItem mnuImportSchema;
 	}
 }
 

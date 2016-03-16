@@ -13,7 +13,8 @@ namespace Clifton.MongoSemanticDatabase
 		public string Alias
 		{
 			get { return alias ?? Name; }
-			set { alias = value; }
+			// Force to null if empty string.
+			set { alias = String.IsNullOrEmpty(value) ? null : value; }
 		}
 
 		public bool IsAliased { get { return Alias != Name; } }
@@ -31,12 +32,10 @@ namespace Clifton.MongoSemanticDatabase
 		public string Alias
 		{
 			get { return alias ?? Name; }
-			set { alias = value; }
+			set { alias = String.IsNullOrEmpty(value) ? null : value; }
 		}
 
 		public bool IsAliased { get { return Alias != Name; } }
-
-		public Type Type { get; set; }
 
 		public List<Schema> Subtypes { get; set; }
 		public List<ConcreteType> ConcreteTypes { get; set; }
