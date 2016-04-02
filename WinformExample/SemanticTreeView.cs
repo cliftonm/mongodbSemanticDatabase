@@ -62,6 +62,10 @@ namespace WinformExample
 						}
 						else if (e.Node.Tag is ConcreteType)
 						{
+							MenuItem editConcreteType = new MenuItem("Edit Concrete Type...");
+							editConcreteType.Click += OnEditConcreteType;
+							editConcreteType.Tag = e.Node;
+							cm.MenuItems.Add(editConcreteType);
 							MenuItem removeConcreteType = new MenuItem("Remove Concrete Type...");
 							removeConcreteType.Click += OnRemoveConcreteTypeClick;
 							cm.MenuItems.Add(removeConcreteType);
@@ -81,6 +85,11 @@ namespace WinformExample
 					cm.Show(tv, e.Location);
 				}
 			}
+		}
+
+		void OnEditConcreteType(object sender, EventArgs e)
+		{
+			new EditConcreteTypeDlg((TreeNode)((MenuItem)sender).Tag).ShowDialog();
 		}
 
 		protected void OnAddSchema(object sender, EventArgs e)

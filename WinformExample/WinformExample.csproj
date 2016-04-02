@@ -93,6 +93,12 @@
       <DependentUpon>CreateAssociationDlg.cs</DependentUpon>
     </Compile>
     <Compile Include="DataHelpers.cs" />
+    <Compile Include="EditConcreteTypeDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EditConcreteTypeDlg.Designer.cs">
+      <DependentUpon>EditConcreteTypeDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="LogView.cs" />
     <Compile Include="PlanView.cs" />
     <Compile Include="SemanticController.cs" />
@@ -125,6 +131,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="CreateAssociationDlg.resx">
       <DependentUpon>CreateAssociationDlg.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EditConcreteTypeDlg.resx">
+      <DependentUpon>EditConcreteTypeDlg.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SemanticDesigner.resx">
       <DependentUpon>SemanticDesigner.cs</DependentUpon>
