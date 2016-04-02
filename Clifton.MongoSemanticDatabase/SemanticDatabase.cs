@@ -757,7 +757,6 @@ namespace Clifton.MongoSemanticDatabase
 					else
 					{
 						// We never have 0 references, because this would have meant decrementing from 1, which would instead trigger and update above.
-
 						DecrementRefCount(schema.Name, id, refCount);
 						id = InternalInsert(schema, docNew);
 					}
@@ -779,7 +778,7 @@ namespace Clifton.MongoSemanticDatabase
 					// There should be a single unique record for the concrete object.
 					if (currentOriginalObject.Elements.Count() == 0)
 					{
-						throw new SemanticDatabaseException("Cannot update the a semantic type starting with the abstract type " + schema.Name);
+						throw new SemanticDatabaseException("Cannot update a semantic type starting with the abstract type " + schema.Name);
 					}
 
 					record = GetRecord(schema.Name, currentOriginalObject);
@@ -1178,10 +1177,25 @@ namespace Clifton.MongoSemanticDatabase
 		{
 			foreach (Schema subtype in schema.Subtypes)
 			{
-				// The subtype record id is:
-				string originalSubtypeId = originalFullRecord[subtype.Name + "Id"].ToString();
-				// Returns either the same subtype ID or the same if no changes were made.
-				string newSubtypeId = InternalUpdate(subtype, currentOriginalSubdoc, newSubdoc, originalSubtypeId);
+				string originalSubtypeId = null;
+				string newSubtypeId = null;
+
+				// The subtype ID may not exist if the user added a subtype to an existing schema.
+				if (originalFullRecord.Contains(subtype.Name + "Id"))
+				{
+					// The subtype record id is:
+					originalSubtypeId = originalFullRecord[subtype.Name + "Id"].ToString();
+					// Returns either the same subtype ID or the same if no changes were made.
+					newSubtypeId = InternalUpdate(subtype, currentOriginalSubdoc, newSubdoc, originalSubtypeId);
+				}
+				else
+				{
+					// Since the subtype ID is currently not in the schema, we insert the collection and 
+					// assign the new subtypeId so that the super-record can be updated.  This handles
+					// the situation when the user adds subtypes that don't yet exist in the actual database (the ID references are missing.)
+					newSubtypeId = InternalInsert(subtype, newSubdoc);
+				}
+
 				// TODO: Assert that the subtype name is unique.
 				// Insert the object ID's referencing the subtypes
 				currentNewObject.Add(subtype.Name + "Id", new ObjectId(newSubtypeId));
