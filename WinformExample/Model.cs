@@ -57,6 +57,7 @@ namespace WinformExample
 			string json = File.ReadAllText(fn);
 			Schemata.Clear();
 			Schemata = (List<Schema>)JsonConvert.DeserializeObject(json, Schemata.GetType());
+			Schemata.ForEach(s => s.FixupParents());
 		}
 
 		public void Save(string fn)

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using Newtonsoft.Json;
+
 namespace Clifton.MongoSemanticDatabase
 {
 	public class ConcreteType
@@ -20,6 +22,20 @@ namespace Clifton.MongoSemanticDatabase
 		public bool IsAliased { get { return Alias != Name; } }
 
 		public Type Type { get; set; }
+
+		/// <summary>
+		/// Does not copy Alias.
+		/// </summary>
+		public ConcreteType Clone()
+		{
+			ConcreteType ct = new ConcreteType()
+			{
+				Name = this.Name,
+				Type = this.Type
+			};
+
+			return ct;
+		}
 	}
 
 	public class Schema
@@ -43,7 +59,8 @@ namespace Clifton.MongoSemanticDatabase
 		/// <summary>
 		/// Parent will not be assigned (nor accurate) until FixupParents() is called.
 		/// </summary>
-		public Schema Parent { get; protected set; }
+		[JsonIgnore]
+		public Schema Parent { get; set; }
 
 		public bool IsConcreteType { get { return Subtypes.Count == 0; } }
 
@@ -124,6 +141,30 @@ namespace Clifton.MongoSemanticDatabase
 			// parentChain.Reverse();
 
 			return parentChain;
+		}
+
+		/// <summary>
+		/// Does not copy alias.
+		/// </summary>
+		public Schema DeepClone(Schema parent = null)
+		{
+			Schema schema = new Schema()
+			{
+				Name = this.Name,
+				Parent = parent
+			};
+
+			foreach (ConcreteType ct in ConcreteTypes)
+			{
+				schema.ConcreteTypes.Add(ct.Clone());
+			}
+
+			foreach (Schema st in Subtypes)
+			{
+				schema.Subtypes.Add(st.DeepClone(schema));
+			}
+
+			return schema;
 		}
 	}
 }

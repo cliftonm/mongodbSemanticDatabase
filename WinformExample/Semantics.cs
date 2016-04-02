@@ -54,9 +54,14 @@ namespace WinformExample
 	/// <summary>
 	/// A subtype is actually a schema.
 	/// </summary>
-	public class ST_AddSubtype : ISemanticType
+	public class ST_AddNewSubtype : ISemanticType
 	{
 		public string Name { get; set; }
 		public string Alias { get; set; }
+	}
+
+	public class ST_AddExistingSubtype : ISemanticType
+	{
+		public Schema Schema { get; set; }
 	}
 }

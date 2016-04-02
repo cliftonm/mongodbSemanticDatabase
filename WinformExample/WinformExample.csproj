@@ -62,17 +62,23 @@
     <Compile Include="AddConcreteTypeDlg.Designer.cs">
       <DependentUpon>AddConcreteTypeDlg.cs</DependentUpon>
     </Compile>
+    <Compile Include="AddExistingSubtypeDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddExistingSubtypeDlg.Designer.cs">
+      <DependentUpon>AddExistingSubtypeDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="AddSchemaDlg.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AddSchemaDlg.Designer.cs">
       <DependentUpon>AddSchemaDlg.cs</DependentUpon>
     </Compile>
-    <Compile Include="AddSubtypeDlg.cs">
+    <Compile Include="AddNewSubtypeDlg.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="AddSubtypeDlg.Designer.cs">
-      <DependentUpon>AddSubtypeDlg.cs</DependentUpon>
+    <Compile Include="AddNewSubtypeDlg.Designer.cs">
+      <DependentUpon>AddNewSubtypeDlg.cs</DependentUpon>
     </Compile>
     <Compile Include="AssociatedDataView.cs" />
     <Compile Include="AssociationView.cs" />
@@ -108,11 +114,14 @@
     <EmbeddedResource Include="AddConcreteTypeDlg.resx">
       <DependentUpon>AddConcreteTypeDlg.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="AddExistingSubtypeDlg.resx">
+      <DependentUpon>AddExistingSubtypeDlg.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="AddSchemaDlg.resx">
       <DependentUpon>AddSchemaDlg.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="AddSubtypeDlg.resx">
-      <DependentUpon>AddSubtypeDlg.cs</DependentUpon>
+    <EmbeddedResource Include="AddNewSubtypeDlg.resx">
+      <DependentUpon>AddNewSubtypeDlg.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="CreateAssociationDlg.resx">
       <DependentUpon>CreateAssociationDlg.cs</DependentUpon>

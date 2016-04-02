@@ -1,6 +1,6 @@
 ﻿namespace WinformExample
 {
-	partial class AddSubtypeDlg
+	partial class AddNewSubtypeDlg
 	{
 		/// <summary>
 		/// Required designer variable.

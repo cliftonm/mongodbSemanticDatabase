@@ -44,17 +44,27 @@ namespace WinformExample
 						break;
 
 					case "Subtypes":
-						MenuItem addSubType = new MenuItem("Add Subtype...");
-						addSubType.Click += OnAddSubtype;
-						cm.MenuItems.Add(addSubType);
+						MenuItem addNewSubType = new MenuItem("Add New Subtype...");
+						addNewSubType.Click += OnAddNewSubtype;
+						cm.MenuItems.Add(addNewSubType);
+						MenuItem addExistingSubType = new MenuItem("Add Existing Subtype...");
+						addExistingSubType.Click += OnAddExistingSubtype;
+						cm.MenuItems.Add(addExistingSubType);
 						break;
 
 					default:
 						if (e.Node.Tag is Schema)
 						{
 							MenuItem removeSchema = new MenuItem("Remove Schema...");
-							removeSchema.Click += OnRemoveClick;
+							removeSchema.Click += OnRemoveSchemaClick;
 							cm.MenuItems.Add(removeSchema);
+							break;
+						}
+						else if (e.Node.Tag is ConcreteType)
+						{
+							MenuItem removeConcreteType = new MenuItem("Remove Concrete Type...");
+							removeConcreteType.Click += OnRemoveConcreteTypeClick;
+							cm.MenuItems.Add(removeConcreteType);
 							break;
 						}
 						else
@@ -78,7 +88,7 @@ namespace WinformExample
 			new AddSchemaDlg().ShowDialog();
 		}
 
-		void OnRemoveClick(object sender, EventArgs e)
+		protected void OnRemoveSchemaClick(object sender, EventArgs e)
 		{
 			Schema schema = (Schema)selectedNode.Tag;
 			DialogResult res = MessageBox.Show("Remove collection in database as well?", schema.Name, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -90,7 +100,23 @@ namespace WinformExample
 			}
 
 			selectedNode.Parent.Nodes.Remove(selectedNode);
-			model.Schemata.Remove(model.GetSchema(schema.Name));		// we find the instance in the collection to remove it.
+
+			if (schema.Parent == null)
+			{
+				model.Schemata.Remove(schema);		
+			}
+			else
+			{
+				schema.Parent.Subtypes.Remove(schema);
+			}
+		}
+
+		protected void OnRemoveConcreteTypeClick(object sender, EventArgs e)
+		{
+			ConcreteType ct = (ConcreteType)selectedNode.Tag;
+			Schema schema = (Schema)selectedNode.Parent.Parent.Tag;			// skip the "Concrete Types" node.			
+			selectedNode.Parent.Nodes.Remove(selectedNode);
+			schema.ConcreteTypes.Remove(ct);
 		}
 
 		protected void OnAddConcreteType(object sender, EventArgs e)
@@ -98,9 +124,17 @@ namespace WinformExample
 			new AddConcreteTypeDlg().ShowDialog();
 		}
 
-		protected void OnAddSubtype(object sender, EventArgs e)
+		protected void OnAddNewSubtype(object sender, EventArgs e)
 		{
-			new AddSubtypeDlg().ShowDialog();
+			new AddNewSubtypeDlg().ShowDialog();
+		}
+
+		/// <summary>
+		/// Select from an existing subtype schema to replicate it at the currently selected node.
+		/// </summary>
+		protected void OnAddExistingSubtype(object sender, EventArgs e)
+		{
+			new AddExistingSubtypeDlg(model).ShowDialog();
 		}
 
 		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_AddSchema data)
@@ -125,21 +159,32 @@ namespace WinformExample
 			// TODO: Get actual type at some point.
 			ConcreteType ct = new ConcreteType() { Name = data.Name, Alias = data.Alias, Type = typeof(string) };
 			schema.ConcreteTypes.Add(ct);
-
-			tv.FindForm().BeginInvoke(() =>
-				{
-					TreeNode ctNode = cttn.Nodes.Add(Helpers.GetConcreteTypeText(ct));
-					ctNode.Tag = ct;
-				});
+			AddConcreteTypeToNode(cttn, ct);
 		}
 
-		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_AddSubtype data)
+		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_AddNewSubtype data)
 		{
 			TreeNode sttn = selectedNode;
 			Schema parentSchema = (Schema)sttn.Parent.Tag;
-			Schema schema = new Schema() { Name = data.Name, Alias = data.Alias };
+			Schema schema = new Schema() { Name = data.Name, Alias = data.Alias, Parent = parentSchema };
 			parentSchema.Subtypes.Add(schema);
+			AddSchemaNode(sttn, schema);
+		}
 
+		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_AddExistingSubtype data)
+		{
+			TreeNode sttn = selectedNode;
+			Schema parentSchema = (Schema)sttn.Parent.Tag;
+			Schema schema = data.Schema.DeepClone();
+			schema.Parent = parentSchema;
+			parentSchema.Subtypes.Add(schema);
+			TreeNode tn = AddSchemaNode(sttn, schema);
+			AddConcreteTypes(tn.Nodes[0], schema);
+			schema.Subtypes.ForEach(st => AddSubTypesToNode(tn.Nodes[1], st));
+		}
+
+		protected TreeNode AddSchemaNode(TreeNode sttn, Schema schema)
+		{
 			TreeNode tn = new TreeNode(Helpers.GetSchemaNodeText(schema));
 			tn.Tag = schema;
 			tn.Nodes.Add("Concrete Types");
@@ -149,6 +194,32 @@ namespace WinformExample
 				{
 					sttn.Nodes.Add(tn);
 				});
+
+			return tn;
+		}
+
+		protected void AddConcreteTypes(TreeNode tn, Schema schema)
+		{
+			schema.ConcreteTypes.ForEach(ct =>
+				{
+					AddConcreteTypeToNode(tn, ct);
+				});
+		}
+
+		protected void AddSubTypesToNode(TreeNode tn, Schema schema)
+		{
+			TreeNode sttn = AddSchemaNode(tn, schema);
+			AddConcreteTypes(sttn.Nodes[0], schema);
+			schema.Subtypes.ForEach(st => AddSubTypesToNode(sttn.Nodes[1], st));
+		}
+
+		protected void AddConcreteTypeToNode(TreeNode cttn, ConcreteType ct)
+		{
+			tv.FindForm().BeginInvoke(() =>
+			{
+				TreeNode ctNode = cttn.Nodes.Add(Helpers.GetConcreteTypeText(ct));
+				ctNode.Tag = ct;
+			});
 		}
 	}
 }
