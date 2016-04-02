@@ -1,0 +1,719 @@
+[
+  {
+    "Name": "date",
+    "NameAsId": "dateId",
+    "Alias": "date",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "month",
+        "NameAsId": "monthId",
+        "Alias": "month",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "month",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "day",
+        "NameAsId": "dayId",
+        "Alias": "day",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "day",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "year",
+        "NameAsId": "yearId",
+        "Alias": "year",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "year",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "time",
+    "NameAsId": "timeId",
+    "Alias": "time",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "hour24",
+        "NameAsId": "hour24Id",
+        "Alias": "hour24",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "hour24",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "minute",
+        "NameAsId": "minuteId",
+        "Alias": "minute",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "minute",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "second",
+        "NameAsId": "secondId",
+        "Alias": "second",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "second",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "monthLookup",
+    "NameAsId": "monthLookupId",
+    "Alias": "monthLookup",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "month",
+        "NameAsId": "monthId",
+        "Alias": "month",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "month",
+            "IsAliased": true,
+            "Type": "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "monthName",
+        "NameAsId": "monthNameId",
+        "Alias": "monthName",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "monthName",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "monthAbbr",
+        "NameAsId": "monthAbbrId",
+        "Alias": "monthAbbr",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "monthAbbr",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "address",
+    "NameAsId": "addressId",
+    "Alias": "address",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "streetPrefix",
+        "NameAsId": "streetPrefixId",
+        "Alias": "streetPrefix",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "streetPrefix",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "streetName",
+        "NameAsId": "streetNameId",
+        "Alias": "streetName",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "streetName",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "streetPostfix",
+        "NameAsId": "streetPostfixId",
+        "Alias": "streetPostfix",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "streetPostfix",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "boxNumber",
+        "NameAsId": "boxNumberId",
+        "Alias": "boxNumber",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "boxNumber",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "city",
+        "NameAsId": "cityId",
+        "Alias": "city",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "cityName",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "state",
+        "NameAsId": "stateId",
+        "Alias": "state",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "abbr",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "zipCode",
+        "NameAsId": "zipCodeId",
+        "Alias": "zipCode",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "zip",
+            "Alias": "zip",
+            "IsAliased": false,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          },
+          {
+            "Name": "zip4",
+            "Alias": "zip4",
+            "IsAliased": false,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "person",
+    "NameAsId": "personId",
+    "Alias": "person",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "personName",
+        "NameAsId": "personNameId",
+        "Alias": "personName",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "firstName",
+            "NameAsId": "firstNameId",
+            "Alias": "firstName",
+            "IsAliased": false,
+            "Subtypes": [
+              {
+                "Name": "name",
+                "NameAsId": "nameId",
+                "Alias": "name",
+                "IsAliased": false,
+                "Subtypes": [],
+                "ConcreteTypes": [
+                  {
+                    "Name": "name",
+                    "Alias": "firstName",
+                    "IsAliased": true,
+                    "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  }
+                ],
+                "IsConcreteType": true
+              }
+            ],
+            "ConcreteTypes": [],
+            "IsConcreteType": false
+          },
+          {
+            "Name": "lastName",
+            "NameAsId": "lastNameId",
+            "Alias": "lastName",
+            "IsAliased": false,
+            "Subtypes": [
+              {
+                "Name": "name",
+                "NameAsId": "nameId",
+                "Alias": "name",
+                "IsAliased": false,
+                "Subtypes": [],
+                "ConcreteTypes": [
+                  {
+                    "Name": "name",
+                    "Alias": "lastName",
+                    "IsAliased": true,
+                    "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  }
+                ],
+                "IsConcreteType": true
+              }
+            ],
+            "ConcreteTypes": [],
+            "IsConcreteType": false
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "phoneNumber",
+    "NameAsId": "phoneNumberId",
+    "Alias": "phoneNumber",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "areaCode",
+        "NameAsId": "areaCodeId",
+        "Alias": "areaCode",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "areaCode",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "exchange",
+        "NameAsId": "exchangeId",
+        "Alias": "exchange",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "exchange",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "subscriberId",
+        "NameAsId": "subscriberIdId",
+        "Alias": "subscriberId",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "value",
+            "Alias": "subscriberId",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "project",
+    "NameAsId": "projectId",
+    "Alias": "project",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "projectName",
+        "NameAsId": "projectNameId",
+        "Alias": "projectName",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "name",
+            "NameAsId": "nameId",
+            "Alias": "name",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "name",
+                "Alias": "projectName",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "projectOwner",
+        "NameAsId": "projectOwnerId",
+        "Alias": "projectOwner",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "owner",
+            "NameAsId": "ownerId",
+            "Alias": "owner",
+            "IsAliased": false,
+            "Subtypes": [
+              {
+                "Name": "name",
+                "NameAsId": "nameId",
+                "Alias": "name",
+                "IsAliased": false,
+                "Subtypes": [],
+                "ConcreteTypes": [
+                  {
+                    "Name": "name",
+                    "Alias": "projectOwner",
+                    "IsAliased": true,
+                    "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                  }
+                ],
+                "IsConcreteType": true
+              }
+            ],
+            "ConcreteTypes": [],
+            "IsConcreteType": false
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "task",
+    "NameAsId": "taskId",
+    "Alias": "task",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "taskPriority",
+        "NameAsId": "taskPriorityId",
+        "Alias": "taskPriority",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "priority",
+            "NameAsId": "priorityId",
+            "Alias": "priority",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "value",
+                "Alias": "taskPriority",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      },
+      {
+        "Name": "name",
+        "NameAsId": "nameId",
+        "Alias": "name",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "name",
+            "Alias": "taskName",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "issue",
+    "NameAsId": "issueId",
+    "Alias": "issue",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "name",
+        "NameAsId": "nameId",
+        "Alias": "name",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "name",
+            "Alias": "issueName",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "issuePriority",
+        "NameAsId": "issuePriorityId",
+        "Alias": "issuePriority",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "priority",
+            "NameAsId": "priorityId",
+            "Alias": "priority",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "value",
+                "Alias": "issuePriority",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      }
+    ],
+    "ConcreteTypes": [],
+    "IsConcreteType": false
+  },
+  {
+    "Name": "bug",
+    "NameAsId": "bugId",
+    "Alias": "bug",
+    "IsAliased": false,
+    "Subtypes": [
+      {
+        "Name": "name",
+        "NameAsId": "nameId",
+        "Alias": "name",
+        "IsAliased": false,
+        "Subtypes": [],
+        "ConcreteTypes": [
+          {
+            "Name": "name",
+            "Alias": "bugName",
+            "IsAliased": true,
+            "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+          }
+        ],
+        "IsConcreteType": true
+      },
+      {
+        "Name": "bugPriority",
+        "NameAsId": "bugPriorityId",
+        "Alias": "bugPriority",
+        "IsAliased": false,
+        "Subtypes": [
+          {
+            "Name": "priority",
+            "NameAsId": "priorityId",
+            "Alias": "priority",
+            "IsAliased": false,
+            "Subtypes": [],
+            "ConcreteTypes": [
+              {
+                "Name": "value",
+                "Alias": "bugPriority",
+                "IsAliased": true,
+                "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+              }
+            ],
+            "IsConcreteType": true
+          }
+        ],
+        "ConcreteTypes": [],
+        "IsConcreteType": false
+      }
+    ],
+    "ConcreteTypes": [
+      {
+        "Name": "description",
+        "Alias": "bugDescription",
+        "IsAliased": true,
+        "Type": "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+      }
+    ],
+    "IsConcreteType": false
+  }
+]
