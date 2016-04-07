@@ -31,6 +31,14 @@ namespace WinformExample
 		public Schema Schema { get; set; }
 	}
 
+	public class ST_AssociatedData : ISemanticType
+	{
+		public DataTable Table { get; set; }
+		public Schema Schema { get; set; }
+	}
+
+	public class ST_NoData : ISemanticType { }
+
 	public class ST_Associations : ISemanticType
 	{
 		public Schema AssocSchema { get; set; }

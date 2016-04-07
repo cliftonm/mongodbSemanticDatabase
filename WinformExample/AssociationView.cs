@@ -22,11 +22,13 @@ namespace WinformExample
 		protected Model model;
 		protected Schema schema;
 		protected DataView dataView;
+		protected SemanticDesigner mainView;
 
-		public AssociationView(Model model, DataGridView view)
+		public AssociationView(Model model, DataGridView view, SemanticDesigner mainView)
 		{
 			this.model = model;
 			this.view = view;
+			this.mainView = mainView;
 			// Program.serviceManager.Get<ISemanticProcessor>().Register<AssociationViewMembrane>(this);
 			view.SelectionChanged += OnSelectionChanged;
 		}
@@ -40,6 +42,7 @@ namespace WinformExample
 			List<string> forwardAssoc = collections.Where(n => n.BeginsWith(fwdName) && !n.EndsWith("Association")).ToList();
 			List<string> reverseAssoc = collections.Where(n => n.EndsWith(revName)).ToList();
 
+			// Update forward and reverse navigation buttons.
 			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociationViewMembrane, ST_Associations>(data => 
 			{
 				data.ForwardSchemaNames = forwardAssoc;
@@ -64,6 +67,7 @@ namespace WinformExample
 		{
 			if (view.HasSelectedRow())
 			{
+				mainView.DisableMoveUp();
 				string associations = view.SelectedRow()[0].ToString();
 				string withSchemaName;
 

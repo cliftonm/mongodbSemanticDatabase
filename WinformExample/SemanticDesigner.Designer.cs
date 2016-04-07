@@ -53,10 +53,11 @@
 			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuLoadSchema = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuImportSchema = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuSaveSchema = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
 			this.mnuExit = new System.Windows.Forms.ToolStripMenuItem();
-			this.mnuImportSchema = new System.Windows.Forms.ToolStripMenuItem();
+			this.btnMainView = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
 			this.splitContainer1.Panel1.SuspendLayout();
 			this.splitContainer1.Panel2.SuspendLayout();
@@ -82,6 +83,7 @@
 			// 
 			// splitContainer1.Panel2
 			// 
+			this.splitContainer1.Panel2.Controls.Add(this.btnMainView);
 			this.splitContainer1.Panel2.Controls.Add(this.btnDeleteAssoc);
 			this.splitContainer1.Panel2.Controls.Add(this.gbNavigate);
 			this.splitContainer1.Panel2.Controls.Add(this.tbRevAssoc);
@@ -349,6 +351,13 @@
 			this.mnuLoadSchema.Text = "&Load Schema";
 			this.mnuLoadSchema.Click += new System.EventHandler(this.mnuLoadSchema_Click);
 			// 
+			// mnuImportSchema
+			// 
+			this.mnuImportSchema.Name = "mnuImportSchema";
+			this.mnuImportSchema.Size = new System.Drawing.Size(164, 22);
+			this.mnuImportSchema.Text = "&Import Schema...";
+			this.mnuImportSchema.Click += new System.EventHandler(this.mnuImportSchema_Click);
+			// 
 			// mnuSaveSchema
 			// 
 			this.mnuSaveSchema.Name = "mnuSaveSchema";
@@ -368,12 +377,14 @@
 			this.mnuExit.Text = "E&xit";
 			this.mnuExit.Click += new System.EventHandler(this.mnuExit_Click);
 			// 
-			// mnuImportSchema
+			// btnMainView
 			// 
-			this.mnuImportSchema.Name = "mnuImportSchema";
-			this.mnuImportSchema.Size = new System.Drawing.Size(164, 22);
-			this.mnuImportSchema.Text = "&Import Schema...";
-			this.mnuImportSchema.Click += new System.EventHandler(this.mnuImportSchema_Click);
+			this.btnMainView.Location = new System.Drawing.Point(753, 501);
+			this.btnMainView.Name = "btnMainView";
+			this.btnMainView.Size = new System.Drawing.Size(125, 23);
+			this.btnMainView.TabIndex = 21;
+			this.btnMainView.Text = "Move to Main View";
+			this.btnMainView.UseVisualStyleBackColor = true;
 			// 
 			// SemanticDesigner
 			// 
@@ -432,6 +443,7 @@
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
 		private System.Windows.Forms.ToolStripMenuItem mnuExit;
 		private System.Windows.Forms.ToolStripMenuItem mnuImportSchema;
+		private System.Windows.Forms.Button btnMainView;
 	}
 }
 

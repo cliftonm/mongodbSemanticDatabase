@@ -45,5 +45,14 @@ namespace WinformExample
 					label.Text = "Semantic Type: " + data.Table.TableName;
 				});
 		}
+
+		protected void Process(ISemanticProcessor proc, IMembrane membrane, ST_NoData nothing)
+		{
+			dgView.FindForm().BeginInvoke(() =>
+			{
+				dgView.DataSource = null;
+				label.Text = "Collection: ";
+			});
+		}
 	}
 }

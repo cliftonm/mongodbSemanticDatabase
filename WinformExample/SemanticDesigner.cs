@@ -15,6 +15,8 @@ namespace WinformExample
 {
 	public partial class SemanticDesigner : Form, IReceptor
 	{
+		public AssociationView AssociationView { get { return assocView; } }
+
 		protected Model model;
 
 		protected CollectionView collectionView;
@@ -27,8 +29,6 @@ namespace WinformExample
 		protected CollectionController collectionController;
 
 		protected Schema assocSchema;
-		protected Schema fromSchema;
-		protected Schema toSchema;
 		protected bool showForward = true;
 
 		public SemanticDesigner(Model model)
@@ -38,16 +38,17 @@ namespace WinformExample
 
 			new PlanView(tbPlan);
 			new LogView(tbLog);
-			assocDataView = new AssociatedDataView(lblAssociatedData, dgvAssociationData);
-			assocView = new AssociationView(model, dgvAssociations);
+			assocDataView = new AssociatedDataView(model, lblAssociatedData, dgvAssociationData);
+			assocView = new AssociationView(model, dgvAssociations, this);
 			semanticView = new SemanticView(lblSemanticType, dgvSemanticData);
-			semanticController = new SemanticController(model);
+			semanticController = new SemanticController(model, this);
 			semanticTreeView = new SemanticTreeView(model, tvTypes);
 
 			// TODO: Put all local event handlers into the semanticTreeView or create a semanticTreeController.
 			tvTypes.AfterSelect += semanticController.AfterSelectEvent;
 			tvTypes.AfterSelect += OnSemanticTypeSelected;
 			dgvSemanticData.SelectionChanged += semanticController.SelectionChangedEvent;
+			btnMainView.Click += semanticController.MoveToMainView;
 
 			collectionView = new CollectionView(lblCollectionName, dgvCollectionData);
 			collectionController = new CollectionController(model);
@@ -60,13 +61,22 @@ namespace WinformExample
 
 		public void Process(ISemanticProcessor proc, IMembrane membrane, ST_Associations assoc)
 		{
-			// TODO: Implement reverse association button list.
 			this.BeginInvoke(() =>
 				{
 					RemoveAssociationButtons();
 					int n = CreateForwardAssociationButtons(assoc.ForwardSchemaNames);
 					CreateReverseAssociationButtons(assoc.ReverseSchemaNames, n);
 				});
+		}
+
+		public void EnableMoveUp()
+		{
+			btnMainView.Enabled = true;
+		}
+
+		public void DisableMoveUp()
+		{
+			btnMainView.Enabled = false;
 		}
 
 		protected void RemoveAssociationButtons()
@@ -114,58 +124,85 @@ namespace WinformExample
 
 		protected void OnShowForwardAssociatedData(object sender, EventArgs e)
 		{
-			showForward = true;
-			// TODO: If we make this a separate view class, it can maintain the from/to/assoc Schema variables itself instead of hold them in the main form class!
-			string assocName = (string)((Button)sender).Tag;
-			string fromSchemaName = assocName.LeftOf("_");
-			string toSchemaName = assocName.RightOf("_");
-			fromSchema = model.GetSchema(fromSchemaName);
-			toSchema = model.GetSchema(toSchemaName);
-			assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
-			ShowForwardAssociatedData();
+			try
+			{
+				showForward = true;
+				// TODO: If we make this a separate view class, it can maintain the from/to/assoc Schema variables itself instead of hold them in the main form class!
+				string assocName = (string)((Button)sender).Tag;
+				string fromSchemaName = assocName.LeftOf("_");
+				string toSchemaName = assocName.RightOf("_");
+				model.FromSchema = model.GetSchema(fromSchemaName);
+				model.ToSchema = model.GetSchema(toSchemaName);
+				model.IsReverseAssociation = false;
+				assocSchema = model.Db.GetAssociationSchema(model.FromSchema, model.ToSchema);
+				ShowForwardAssociatedData();
+				EnableMoveUp();
+			}
+			catch (Exception ex)
+			{
+				Helpers.Log(ex.Message);
+				ClearAssociationData();
+			}
 		}
 
 		protected void OnShowReverseAssociatedData(object sender, EventArgs e)
 		{
-			showForward = false;
-			// TODO: If we make this a separate view class, it can maintain the from/to/assoc Schema variables itself instead of hold them in the main form class!
-			string assocName = (string)((Button)sender).Tag;
-			string fromSchemaName = assocName.LeftOf("_");
-			string toSchemaName = assocName.RightOf("_");
-			fromSchema = model.GetSchema(fromSchemaName);
-			toSchema = model.GetSchema(toSchemaName);
-			assocSchema = model.Db.GetAssociationSchema(fromSchema, toSchema);
-			ShowReverseAssociatedData();
+			try
+			{
+				showForward = false;
+				// TODO: If we make this a separate view class, it can maintain the from/to/assoc Schema variables itself instead of hold them in the main form class!
+				string assocName = (string)((Button)sender).Tag;
+				string fromSchemaName = assocName.LeftOf("_");
+				string toSchemaName = assocName.RightOf("_");
+				model.FromSchema = model.GetSchema(fromSchemaName);
+				model.ToSchema = model.GetSchema(toSchemaName);
+				model.IsReverseAssociation = true;
+				assocSchema = model.Db.GetAssociationSchema(model.FromSchema, model.ToSchema);
+				ShowReverseAssociatedData();
+				EnableMoveUp();
+			}
+			catch (Exception ex)
+			{
+				Helpers.Log(ex.Message);
+				ClearAssociationData();
+			}
+		}
+
+		protected void ClearAssociationData()
+		{
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_NoData>();
 		}
 
 		protected void ShowForwardAssociatedData()
 		{
 			// TODO: Duplicate code, sort of (notice use of assocSchema and toSchema)
-			BsonDocument filter = new BsonDocument(fromSchema.Name + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
+			BsonDocument filter = new BsonDocument(model.FromSchema.Name + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
 			// List<BsonDocument> docs = model.Db.Query(assocSchema, filter);
 			string plan;
-			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(fromSchema, toSchema, out plan, filter);
+			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(model.FromSchema, model.ToSchema, out plan, filter);
 			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<PlanViewMembrane, ST_Plan>(p => p.Plan = plan);
 			List<ConcreteType> semanticColumns;
-			DataTable dt = DataHelpers.InitializeSemanticColumns(toSchema, out semanticColumns);
-			DataHelpers.PopulateSemanticTable(dt, docs, toSchema);
+			DataTable dt = DataHelpers.InitializeSemanticColumns(model.ToSchema, out semanticColumns);
+			DataHelpers.PopulateSemanticTable(dt, docs, model.ToSchema);
 			AddForwardAssociationNames(dt, docs);
-			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = toSchema; });
+			AddSchemaFromToIds(dt, docs, model.FromSchema, model.ToSchema);
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_AssociatedData>(data => { data.Table = dt; data.Schema = model.ToSchema; });
 		}
 
 		protected void ShowReverseAssociatedData()
 		{
 			// TODO: Duplicate code, sort of (notice use of assocSchema and fromSchema)
-			BsonDocument filter = new BsonDocument(toSchema.Name + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
+			BsonDocument filter = new BsonDocument(model.ToSchema.Name + "Id", new ObjectId(dgvSemanticData.SelectedRow()["_id"].ToString()));
 			// List<BsonDocument> docs = model.Db.Query(assocSchema, filter);
 			string plan;
-			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(fromSchema, toSchema, out plan, filter);
+			List<BsonDocument> docs = model.Db.QueryAssociationServerSide(model.FromSchema, model.ToSchema, out plan, filter);
 			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<PlanViewMembrane, ST_Plan>(p => p.Plan = plan);
 			List<ConcreteType> semanticColumns;
-			DataTable dt = DataHelpers.InitializeSemanticColumns(fromSchema, out semanticColumns);
-			DataHelpers.PopulateSemanticTable(dt, docs, fromSchema);
-			AddForwardAssociationNames(dt, docs);
-			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = fromSchema; });
+			DataTable dt = DataHelpers.InitializeSemanticColumns(model.FromSchema, out semanticColumns);
+			DataHelpers.PopulateSemanticTable(dt, docs, model.FromSchema);
+			AddReverseAssociationNames(dt, docs);
+			AddSchemaFromToIds(dt, docs, model.FromSchema, model.ToSchema);
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<AssociatedDataViewMembrane, ST_AssociatedData>(data => { data.Table = dt; data.Schema = model.FromSchema; });
 		}
 
 		protected void AddForwardAssociationNames(DataTable dt, List<BsonDocument> docs)
@@ -175,6 +212,33 @@ namespace WinformExample
 			for (int i = 0; i < dt.Rows.Count; i++)
 			{
 				dt.Rows[i]["fwdAssocName"] = docs[i]["fwdAssocName"];
+			}
+		}
+
+		protected void AddReverseAssociationNames(DataTable dt, List<BsonDocument> docs)
+		{
+			dt.Columns.Add("revAssocName");
+
+			for (int i = 0; i < dt.Rows.Count; i++)
+			{
+				dt.Rows[i]["revAssocName"] = docs[i]["revAssocName"];
+			}
+		}
+
+		/// <summary>
+		/// Add ID's of the source from/to records so we can use the "to" ID's for filtering records when the user moves schema to the main schema view for further navigation.
+		/// </summary>
+		protected void AddSchemaFromToIds(DataTable dt, List<BsonDocument> docs, Schema fromSchema, Schema toSchema)
+		{
+			string fromSchemaId = fromSchema.Name + "Id";
+			string toSchemaId = model.ToSchema.Name + "Id";
+			dt.Columns.Add(fromSchemaId);
+			dt.Columns.Add(toSchemaId);
+
+			for (int i = 0; i < dt.Rows.Count; i++)
+			{
+				dt.Rows[i][fromSchemaId] = docs[i][fromSchemaId];
+				dt.Rows[i][toSchemaId] = docs[i][toSchemaId];
 			}
 		}
 

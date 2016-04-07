@@ -27,5 +27,14 @@ namespace WinformExample
 					label.Text = "Collection: " + data.Table.TableName;
 				});
 		}
+
+		protected void Process(ISemanticProcessor proc, IMembrane membrane, ST_NoData nothing)
+		{
+			view.FindForm().BeginInvoke(() =>
+			{
+				view.DataSource = null;
+				label.Text = "Collection: ";
+			});
+		}
 	}
 }

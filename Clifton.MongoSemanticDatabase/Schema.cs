@@ -23,14 +23,12 @@ namespace Clifton.MongoSemanticDatabase
 
 		public Type Type { get; set; }
 
-		/// <summary>
-		/// Does not copy Alias.
-		/// </summary>
 		public ConcreteType Clone()
 		{
 			ConcreteType ct = new ConcreteType()
 			{
 				Name = this.Name,
+				Alias = this.Alias,
 				Type = this.Type
 			};
 
@@ -151,6 +149,7 @@ namespace Clifton.MongoSemanticDatabase
 			Schema schema = new Schema()
 			{
 				Name = this.Name,
+				Alias = this.Alias,
 				Parent = parent
 			};
 

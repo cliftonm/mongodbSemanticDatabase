@@ -162,7 +162,7 @@ namespace Clifton.MongoSemanticDatabase
 		public void DeleteAssociation(Schema schema, BsonDocument doc)
 		{
 			// For example, person_phoneNumber
-			List<BsonDocument> recs = GetAll(schema.Name, null, true, doc);
+			List<BsonDocument> recs = GetAll(schema.Name, doc["_id"].ToString(), true);
 			Assert.That(recs.Count == 1, "Association record does not exist.");
 			BsonDocument rootRec = recs[0];
 			Assert.That(rootRec["_ref"].ToString().to_i() == 1, "Deleting an association record that is itself associated is not supported.");
@@ -237,16 +237,11 @@ namespace Clifton.MongoSemanticDatabase
 			return Query(schema, id, true);
 		}
 
-		public List<BsonDocument> Query(Schema schema, BsonDocument filter)
-		{
-			return Query(schema, null, true, filter);
-		}
-
-		protected List<BsonDocument> Query(Schema schema, string id, bool withId, BsonDocument filter = null)
+		protected List<BsonDocument> Query(Schema schema, string id, bool withId)
 		{
 			List<BsonDocument> records = new List<BsonDocument>();
 
-			records = GetAll(schema.Name, id, withId, filter);
+			records = GetAll(schema.Name, id, withId);
 
 			foreach (BsonDocument record in records)
 			{
@@ -286,13 +281,22 @@ namespace Clifton.MongoSemanticDatabase
 			return records;
 		}
 
-		public List<BsonDocument> QueryServerSide(Schema schema)
+		public List<BsonDocument> QueryServerSide(Schema schema, List<string> idsToMatchOn = null)
 		{
 			var collection = db.GetCollection<BsonDocument>(schema.Name);
-			List<string> plan = GetPlan(schema);
-			var aggr = collection.Aggregate();
-			plan.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
-			List<BsonDocument> records = aggr.ToList();
+			List<string> plan = GetPlan(schema, "", idsToMatchOn);
+			List<BsonDocument> records = new List<BsonDocument>();
+
+			try
+			{
+				var aggr = collection.Aggregate();
+				plan.ForEach(s => aggr = aggr.AppendStage<BsonDocument>(s));
+				records = aggr.ToList();
+			}
+			catch (Exception ex)
+			{
+				throw new SemanticDatabaseException(ex.Message);
+			}
 
 			return records;
 		}
@@ -398,10 +402,10 @@ namespace Clifton.MongoSemanticDatabase
 			return records;
 		}
 
-		public string ShowPlan(Schema schema)
+		public string ShowPlan(Schema schema, List<string> idsToMatchOn = null)
 		{
 			string ret;
-			List<string> plan = GetPlan(schema);
+			List<string> plan = GetPlan(schema, "", idsToMatchOn);
 
 			// If there are no subtypes, then we don't have an aggregation, we just have a basic collection query.
 			if (plan.Count == 0)
@@ -420,14 +424,16 @@ namespace Clifton.MongoSemanticDatabase
 		/// Returns all data in a MongoDB collection.  By default, the _id field is not returned.  
 		/// An optional _id filter can be passed in with a string.  To filter on other fields, leave id null and specify a BsonDocument filter.
 		/// </summary>
-		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false, BsonDocument filter = null)
+		public List<BsonDocument> GetAll(string collectionName, string id = null, bool withId = false)
 		{
 			// Filter by ID or a filter specified by the caller.
+			BsonDocument filter = null;
+
 			if (id != null)
 			{
 				filter = GetIdFilterDocument(id);
 			}
-			else if (filter == null)
+			else // if (filter == null)
 			{
 				filter = new BsonDocument();
 			}
@@ -509,7 +515,7 @@ namespace Clifton.MongoSemanticDatabase
 			}
 		}
 
-		protected List<string> GetPlan(Schema schema, string parentName = "")
+		protected List<string> GetPlan(Schema schema, string parentName = "", List<string> idsToMatchOn = null)
 		{
 			List<string> projections = new List<string>();
 			Dictionary<string, int> asList = new Dictionary<string, int>();
@@ -518,7 +524,15 @@ namespace Clifton.MongoSemanticDatabase
 			if (pipeline.Count > 0)
 			{
 				pipeline[pipeline.Count - 1] = pipeline.Last() + ",";
-				pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
+
+				if (idsToMatchOn != null)
+				{
+					// Insert the match before the projection
+					pipeline.Add("{$match: {_id:{$in:[" + String.Join(",", idsToMatchOn.Select(id => "ObjectId('" + id + "')").ToList()) + "]}}},");
+				}
+
+				pipeline.Add(String.Format("{{$project: {{{0}}}}}", String.Join(",", projections)));
+				// pipeline.Add(String.Format("{{$project: {{{0}, '_id':0}} }}", String.Join(",", projections)));
 			}
 
 			return pipeline;

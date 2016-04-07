@@ -20,10 +20,12 @@ namespace WinformExample
 		protected string currentId;
 		protected bool ignoreUpdate;
 		protected DataRow newRow;
+		protected SemanticDesigner mainView;
 
-		public SemanticController(Model model)
+		public SemanticController(Model model, SemanticDesigner mainView)
 		{
 			this.model = model;
+			this.mainView = mainView;
 			currentValues = new Dictionary<string, string>();
 		}
 
@@ -48,6 +50,23 @@ namespace WinformExample
 					{
 					}
 				});
+		}
+
+		/// <summary>
+		/// Move the "to schema" displayed in the association view to the main view.
+		/// The main view is filtered by the id's in the current association list.
+		/// </summary>
+		public void MoveToMainView(object sender, EventArgs args)
+		{
+			currentSchema = model.AssociatedSchema;
+			ResetBuffers();
+			List<string> ids = GetFilterList(model.AssociatedSchema, model.ToData);
+
+			string plan = model.Db.ShowPlan(currentSchema, ids);
+			Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<PlanViewMembrane, ST_Plan>(p => p.Plan = plan);
+
+			ShowSemanticData(currentSchema, ids);
+			mainView.AssociationView.Update(currentSchema);		// Update navigation buttons.
 		}
 
 		public void NewRowEvent(object sender, DataTableNewRowEventArgs e)
@@ -176,12 +195,35 @@ namespace WinformExample
 			}
 		}
 
-		protected void ShowSemanticData(Schema schema)
+		protected List<string> GetFilterList(Schema toSchema, DataTable toData)
+		{
+			string toSchemaId = toSchema + "Id";
+			List<string> ids = new List<string>();
+
+			foreach (DataRow row in toData.Rows)
+			{
+				ids.Add(row[toSchemaId].ToString());
+			}
+
+			return ids;
+		}
+
+		protected void ShowSemanticData(Schema schema, List<string> match = null)
 		{
 			Helpers.Try(() => 
 				{
-					// TODO: Duplicate code
-					List<BsonDocument> docs = model.Db.Query(schema);
+					// TODO: Somewhat duplicate code
+					List<BsonDocument> docs = new List<BsonDocument>();
+
+					try
+					{
+						docs = model.Db.QueryServerSide(schema, match);
+					}
+					catch (SemanticDatabaseException ex)
+					{
+						Helpers.Log(ex.Message);
+					}
+
 					DataTable dt = DataHelpers.InitializeSemanticColumns(schema, out semanticColumns);
 					DataHelpers.PopulateSemanticTable(dt, docs, schema);
 					Program.serviceManager.Get<ISemanticProcessor>().ProcessInstance<SemanticViewMembrane, ST_Data>(data => { data.Table = dt; data.Schema = schema; });
@@ -192,3 +234,32 @@ namespace WinformExample
 		}
 	}
 }
+
+
+/*
+This works returns 2 records:
+ 
+db.phoneNumber.aggregate({$lookup: {from: 'areaCode', localField:'areaCodeId', foreignField: '_id', as: 'areaCode'} },
+{$unwind: '$areaCode'},
+{$lookup: {from: 'exchange', localField:'exchangeId', foreignField: '_id', as: 'exchange'} },
+{$unwind: '$exchange'},
+{$lookup: {from: 'subscriberId', localField:'subscriberIdId', foreignField: '_id', as: 'subscriberId'} },
+{$unwind: '$subscriberId'},
+{$match: { _id: {$in: [ObjectId('56e7195144c43e2874d8e35b'), ObjectId('56e7781744c43e2f54dcaa1a')]}}},
+{$project: {'areaCode':'$areaCode.value','exchange':'$exchange.value','subscriberId':'$subscriberId.value'
+} })
+
+This does not:
+
+db.phoneNumber.aggregate({$lookup: {from: 'areaCode', localField:'areaCodeId', foreignField: '_id', as: 'areaCode'} },
+{$unwind: '$areaCode'},
+{$lookup: {from: 'exchange', localField:'exchangeId', foreignField: '_id', as: 'exchange'} },
+{$unwind: '$exchange'},
+{$lookup: {from: 'subscriberId', localField:'subscriberIdId', foreignField: '_id', as: 'subscriberId'} },
+{$unwind: '$subscriberId'},
+{$project: {'areaCode':'$areaCode.value','exchange':'$exchange.value','subscriberId':'$subscriberId.value'
+} }).find({_id: {$in: [ObjectId('56e7195144c43e2874d8e35b'), ObjectId('56e7781744c43e2f54dcaa1a')]}})
+
+Why?
+
+*/

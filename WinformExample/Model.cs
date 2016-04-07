@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 
@@ -13,6 +14,12 @@ namespace WinformExample
 	{
 		public List<Schema> Schemata { get; protected set; }
 		public SemanticDatabase Db { get; protected set; }
+		public Schema FromSchema { get; set; }
+		public Schema ToSchema { get; set; }
+		public bool IsReverseAssociation { get; set; }
+		public DataTable ToData { get; set; }		// Associated data.
+
+		public Schema AssociatedSchema { get { return IsReverseAssociation ? FromSchema : ToSchema; } }
 
 		public Model()
 		{
